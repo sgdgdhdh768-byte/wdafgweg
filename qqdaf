@@ -1,1 +1,3187 @@
-afgegsa
+-- https://lua.expert/
+local v1 = shared
+
+if type(v1) == "table" and rawget(shared, "__CMVFXCustomAnimReceiverActive") then
+	local LocalPlayer = game:GetService("Players").LocalPlayer
+
+	if not LocalPlayer or LocalPlayer.Name ~= "foozioX2" then
+		return
+	end
+
+	warn("anim receiver bailed, guard already active")
+
+	return
+end
+
+if type(shared) == "table" then
+	rawset(shared, "__CMVFXCustomAnimReceiverActive", true)
+
+	local LocalPlayer = game:GetService("Players").LocalPlayer
+
+	if LocalPlayer and LocalPlayer.Name == "foozioX2" then
+		warn("anim receiver activated for this client")
+	end
+end
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+
+game:GetService("HttpService")
+
+local TweenService = game:GetService("TweenService")
+local v5 = warn
+local Replication = ReplicatedStorage:WaitForChild("Replication")
+local UnreliableRemoteEvent = ReplicatedStorage:WaitForChild("UnreliableRemoteEvent")
+local EventTypes = ReplicatedStorage:WaitForChild("EventTypes")
+local LocalPlayer = Players.LocalPlayer
+local t = {}
+local t2 = {}
+local t3 = {}
+local t4 = {}
+local v6 = nil
+local v7 = nil
+
+local function _diagWarn(p1) --[[ _diagWarn | Line: 40 ]] end
+
+local function _diagWarnThrottled(p1, p2, p3) --[[ _diagWarnThrottled | Line: 43 ]] end
+
+local function _summarizeTargetNameList(p1) --[[ _summarizeTargetNameList | Line: 47 ]]
+	if type(p1) ~= "table" or #p1 == 0 then
+		return "none"
+	end
+
+	local v1 = math.min(#p1, 3)
+	local t = {}
+
+	for i = 1, v1 do
+		t[#t + 1] = tostring(p1[i])
+	end
+
+	if v1 < #p1 then
+		t[#t + 1] = "+" .. tostring(#p1 - v1)
+	end
+
+	return table.concat(t, ",")
+end
+
+local function _resolveCustomEntryProps(p1) --[[ _resolveCustomEntryProps | Line: 62 ]]
+	if type(p1) ~= "table" then
+		return nil
+	end
+
+	if type(p1.Props) == "table" then
+		return p1.Props
+	end
+
+	if type(p1.Data) == "table" and type(p1.Data.Properties) == "table" then
+		return p1.Data.Properties
+	end
+
+	if type(p1.Properties) == "table" then
+		return p1.Properties
+	end
+
+	return p1
+end
+
+local function _resolveCustomPlaybackSpeed(p1) --[[ _resolveCustomPlaybackSpeed | Line: 78 | Upvalues: _resolveCustomEntryProps (copy) ]]
+	local v1 = _resolveCustomEntryProps(p1)
+	local v3 = tonumber(if type(v1) == "table" then v1.Speed else false) or 1
+
+	if type(v3) ~= "number" or v3 <= 0 then
+		v3 = 1
+	end
+
+	return v3
+end
+
+local function _isCustomReversePlaybackEnabled(p1) --[[ _isCustomReversePlaybackEnabled | Line: 87 | Upvalues: _resolveCustomEntryProps (copy) ]]
+	local v1 = _resolveCustomEntryProps(p1)
+
+	return if type(v1) == "table" then v1.ReversePlayback == true else false
+end
+
+local function _resolveCustomAuthoredDuration(p1) --[[ _resolveCustomAuthoredDuration | Line: 92 | Upvalues: _resolveCustomEntryProps (copy) ]]
+	local v1 = _resolveCustomEntryProps(p1)
+	local v3 = tonumber(if type(p1) == "table" then p1.RawDuration or p1.AuthoredDuration else false)
+
+	if not v3 then
+		v3 = tonumber(if type(v1) == "table" then v1._duration else false)
+
+		if not v3 then
+			v3 = tonumber(if type(v1) == "table" then v1.Duration else false)
+
+			if not v3 then
+				v3 = tonumber(if type(p1) == "table" then p1.Duration else false)
+			end
+		end
+	end
+
+	if type(v3) == "number" and not (v3 <= 0) then
+		return v3
+	end
+
+	return nil
+end
+
+local function _resolveCustomPlaybackDuration(p1) --[[ _resolveCustomPlaybackDuration | Line: 104 | Upvalues: _resolveCustomEntryProps (copy) ]]
+	local v1 = _resolveCustomEntryProps(p1)
+	local v3 = tonumber(if type(v1) == "table" then v1._duration else false)
+
+	if not v3 then
+		v3 = tonumber(if type(v1) == "table" then v1.Duration else false)
+	end
+
+	if type(v3) == "number" and v3 > 0 then
+		local v6 = _resolveCustomEntryProps(p1)
+		local v8 = tonumber(if type(v6) == "table" then v6.Speed else false) or 1
+
+		if type(v8) ~= "number" or v8 <= 0 then
+			v8 = 1
+		end
+
+		return math.max(0.05, v3 / v8)
+	end
+
+	local v10 = tonumber(if type(p1) == "table" then p1.Duration else false)
+
+	if type(v10) == "number" and v10 > 0 then
+		return math.max(0.05, v10)
+	end
+
+	return nil
+end
+
+local function _mapCustomPlaybackLocalTime(p1, p2, p3) --[[ _mapCustomPlaybackLocalTime | Line: 118 | Upvalues: _resolveCustomEntryProps (copy) ]]
+	local v2 = math.max(0, tonumber(p3) or 0)
+	local v4 = math.max(0, tonumber(p2) or 0)
+	local v5 = _resolveCustomEntryProps(p1)
+	local v7 = tonumber(if type(v5) == "table" then v5.Speed else false) or 1
+
+	if type(v7) ~= "number" or v7 <= 0 then
+		v7 = 1
+	end
+
+	local sum = v4 * v7
+	local v8 = _resolveCustomEntryProps(p1)
+
+	if if type(v8) == "table" then v8.ReversePlayback == true else false then
+		sum = v2 - sum
+	end
+
+	return math.clamp(sum, 0, v2)
+end
+
+local function _resolveCustomPlaybackSampleTime(p1, p2, p3, p4) --[[ _resolveCustomPlaybackSampleTime | Line: 127 | Upvalues: _resolveCustomAuthoredDuration (copy), _resolveCustomEntryProps (copy) ]]
+	local v1 = _resolveCustomAuthoredDuration(p1)
+
+	if type(p3) == "number" and p3 > 0 then
+		v1 = p3
+	end
+
+	if type(v1) ~= "number" or v1 <= 0 then
+		return math.max(0, (tonumber(p2) or 0) + (tonumber(p4) or 0))
+	end
+
+	local v5 = math.max(0, tonumber(v1) or 0)
+	local v7 = math.max(0, tonumber(p2) or 0)
+	local v8 = _resolveCustomEntryProps(p1)
+	local v10 = tonumber(if type(v8) == "table" then v8.Speed else false) or 1
+
+	if type(v10) ~= "number" or v10 <= 0 then
+		v10 = 1
+	end
+
+	local sum = v7 * v10
+	local v11 = _resolveCustomEntryProps(p1)
+
+	if if type(v11) == "table" then v11.ReversePlayback == true else false then
+		sum = v5 - sum
+	end
+
+	return math.max(0, math.clamp(sum, 0, v5) + (tonumber(p4) or 0))
+end
+
+local function _describeOverlayState(p1) --[[ _describeOverlayState | Line: 141 | Upvalues: _resolveCustomEntryProps (copy), _summarizeTargetNameList (copy) ]]
+	if type(p1) ~= "table" then
+		return "none"
+	end
+
+	local format = string.format
+	local v2 = tostring(p1.UID)
+	local v4 = tostring(p1.LiveOverlaySource or "")
+	local v6 = tostring(p1.LiveOverlayReason or "")
+	local v7 = tonumber(p1.Duration) or 0
+	local v8 = tonumber(p1.RawDuration) or -1
+	local v9 = _resolveCustomEntryProps(p1)
+	local v11 = tonumber(if type(v9) == "table" then v9.Speed else false) or 1
+
+	if type(v11) ~= "number" or v11 <= 0 then
+		v11 = 1
+	end
+
+	local v12 = tonumber(v11) or 1
+	local v13 = _resolveCustomEntryProps(p1)
+
+	return format("uid=%s src=%s reason=%s dur=%.4f raw=%.4f sp=%.3f rev=%s in=%.3f out=%.3f keep=%s targets=%s", v2, v4, v6, v7, v8, v12, tostring(if type(v13) == "table" then v13.ReversePlayback == true else false), tonumber(p1.BlendIn) or 0, tonumber(p1.BlendOut) or 0, tostring(if p1.KeepFinalPosition == true then true else false), _summarizeTargetNameList(p1.TargetNames))
+end
+
+local function _describeIncomingOverlayData(p1) --[[ _describeIncomingOverlayData | Line: 161 | Upvalues: _resolveCustomEntryProps (copy), _summarizeTargetNameList (copy) ]]
+	if type(p1) ~= "table" then
+		return "none"
+	end
+
+	local format = string.format
+	local v2 = tostring(p1.UID)
+	local v4 = tostring(p1.LiveOverlaySource or "")
+	local v6 = tostring(p1.LiveOverlayReason or "")
+	local v7 = tonumber(p1.Duration) or 0
+	local v8 = tonumber(p1.RawDuration) or -1
+	local v9 = _resolveCustomEntryProps(p1)
+	local v11 = tonumber(if type(v9) == "table" then v9.Speed else false) or 1
+
+	if type(v11) ~= "number" or v11 <= 0 then
+		v11 = 1
+	end
+
+	local v12 = tonumber(v11) or 1
+	local v13 = _resolveCustomEntryProps(p1)
+
+	return format("uid=%s src=%s reason=%s dur=%.4f raw=%.4f sp=%.3f rev=%s in=%.3f out=%.3f keep=%s targets=%s", v2, v4, v6, v7, v8, v12, tostring(if type(v13) == "table" then v13.ReversePlayback == true else false), tonumber(p1.BlendIn) or 0, tonumber(p1.BlendOut) or 0, tostring(if p1.KeepFinalPosition == true then true else false), _summarizeTargetNameList(p1.TargetNames))
+end
+
+local function _describeStandaloneCustomTrackState(p1) --[[ _describeStandaloneCustomTrackState | Line: 181 | Upvalues: _resolveCustomAuthoredDuration (copy), _resolveCustomEntryProps (copy), _summarizeTargetNameList (copy) ]]
+	if type(p1) ~= "table" then
+		return "none"
+	end
+
+	if type(p1.Events) ~= "table" or #p1.Events ~= 1 then
+		return "none"
+	end
+
+	local v1 = p1.Events[1]
+
+	if type(v1) ~= "table" or v1.EventType ~= "CustomAnimation" then
+		return "none"
+	end
+
+	local v2 = v1.Data and v1.Data.Properties or (v1.Properties or {})
+	local Diag = p1.Diag
+	local v3 = type(Diag) == "table" and Diag.CustomTargets or nil
+	local format = string.format
+	local v5 = tostring(v1.uid)
+	local v7 = tostring(v2.__LiveOverlaySource or "")
+	local v9 = tostring(v2.__LiveOverlayReason or "")
+	local v11 = tonumber(v1._cachedDuration or v1.Duration) or 0
+	local v13 = tonumber((_resolveCustomAuthoredDuration(v1))) or -1
+	local v14 = _resolveCustomEntryProps(v1)
+	local v16 = tonumber(if type(v14) == "table" then v14.Speed else false) or 1
+
+	if type(v16) ~= "number" or v16 <= 0 then
+		v16 = 1
+	end
+
+	local v17 = tonumber(v16) or 1
+	local v18 = _resolveCustomEntryProps(v1)
+
+	return format("uid=%s src=%s reason=%s dur=%.4f raw=%.4f sp=%.3f rev=%s in=%.3f out=%.3f keep=%s targets=%s", v5, v7, v9, v11, v13, v17, tostring(if type(v18) == "table" then v18.ReversePlayback == true else false), tonumber(v2.BlendIn) or 0, tonumber(v2.BlendOut) or 0, tostring(if v2.KeepFinalPosition == true then true else false), _summarizeTargetNameList(v3))
+end
+
+local function _isMoveEditorPreviewCharacterName(p1) --[[ _isMoveEditorPreviewCharacterName | Line: 208 ]]
+	if type(p1) ~= "string" then
+		return false
+	end
+
+	return if string.match(p1, "^TestAttacker_%d+$") == nil then string.match(p1, "^TestVictim_%d+$") ~= nil else true
+end
+
+local function _fmtPreviewPoseVec3(p1) --[[ _fmtPreviewPoseVec3 | Line: 216 ]]
+	if typeof(p1) == "Vector3" then
+		return string.format("(%.2f, %.2f, %.2f)", p1.X, p1.Y, p1.Z)
+	end
+
+	return "nil"
+end
+
+local function _computePreviewPoseLookDeltaDeg(p1, p2) --[[ _computePreviewPoseLookDeltaDeg | Line: 223 ]]
+	return math.deg((math.acos((math.clamp(p1.LookVector:Dot(p2.LookVector), -1, 1)))))
+end
+
+local function _maybeSendMoveEditorPreviewPose(p1, p2, p3) --[[ _maybeSendMoveEditorPreviewPose | Line: 228 | Upvalues: UnreliableRemoteEvent (copy) ]]
+	if typeof(p1) ~= "Instance" or not (p1:IsA("Model") and p1.Parent) then
+		return
+	end
+
+	local v1 = p1.Name
+
+	if not (if type(v1) == "string" then if string.match(v1, "^TestAttacker_%d+$") == nil then if string.match(v1, "^TestVictim_%d+$") == nil then false else true else true else false) then
+		return
+	end
+
+	local HumanoidRootPart = p1:FindFirstChild("HumanoidRootPart")
+	local v3 = HumanoidRootPart and HumanoidRootPart:IsA("BasePart") and HumanoidRootPart.CFrame or p1:GetPivot()
+
+	if typeof(v3) ~= "CFrame" then
+		return
+	end
+
+	local v5 = tonumber(type(p2) == "table" and p2.LastPreviewPoseSentAt or nil) or 0
+	local v6 = type(p2) == "table" and p2.LastPreviewPoseCF or nil
+	local v7 = typeof(v6) == "CFrame" and (v3.Position - v6.Position).Magnitude or (1 / 0)
+
+	if p3 - v5 < 1 / 60 and (v7 < 0.005 and (typeof(v6) == "CFrame" and math.deg((math.acos((math.clamp(v3.LookVector:Dot(v6.LookVector), -1, 1))))) or (1 / 0)) < 0.1) then
+		return
+	end
+
+	local v14 = (tonumber(type(p2) == "table" and p2.LastPreviewPoseSeq or nil) or 0) + 1
+
+	if type(p2) == "table" then
+		p2.LastPreviewPoseSentAt = p3
+		p2.LastPreviewPoseCF = v3
+		p2.LastPreviewPoseSeq = v14
+	end
+
+	local t = {
+		cframe = v3,
+		modelName = p1.Name,
+		seq = v14,
+		clientT = workspace:GetServerTimeNow()
+	}
+
+	t.overlayUid = if type(p2) == "table" then p2.UID or nil else nil
+	UnreliableRemoteEvent:FireServer(t, "MoveEditorTestPreviewPose")
+end
+
+local v8 = setmetatable({}, {
+	__mode = "k"
+})
+
+local function _buildMotorMap(p1) --[[ _buildMotorMap | Line: 267 ]]
+	local t = {}
+
+	for i, v in ipairs(p1:GetDescendants()) do
+		if v:IsA("Motor6D") then
+			local Part1 = v.Part1
+
+			if Part1 then
+				t[Part1.Name] = v
+			end
+		end
+	end
+
+	return t
+end
+
+local function _getMotorMap(p1) --[[ _getMotorMap | Line: 279 | Upvalues: v8 (copy), _buildMotorMap (copy) ]]
+	if typeof(p1) ~= "Instance" or not p1:IsA("Model") then
+		return nil
+	end
+
+	local v1 = v8[p1]
+
+	if v1 then
+		return v1
+	end
+
+	local v2 = _buildMotorMap(p1)
+
+	v8[p1] = v2
+
+	return v2
+end
+
+local function _findMotorForTarget(p1, p2) --[[ _findMotorForTarget | Line: 289 | Upvalues: v8 (copy), _buildMotorMap (copy) ]]
+	if typeof(p1) ~= "Instance" or not p1:IsA("Model") then
+		return nil
+	end
+
+	if type(p2) ~= "string" or p2 == "" then
+		return nil
+	end
+
+	local v1
+
+	if typeof(p1) == "Instance" and p1:IsA("Model") then
+		local v2 = v8[p1]
+
+		if v2 then
+			v1 = v2
+		else
+			local v3 = _buildMotorMap(p1)
+
+			v8[p1] = v3
+			v1 = v3
+		end
+	else
+		v1 = nil
+	end
+
+	if not v1 then
+		return nil
+	end
+
+	local v4 = v1[p2]
+
+	if v4 and v4.Parent then
+		return v4
+	end
+
+	v1[p2] = nil
+
+	for i, v in ipairs(p1:GetDescendants()) do
+		if v:IsA("Motor6D") then
+			local Part1 = v.Part1
+
+			if Part1 and Part1.Name == p2 then
+				v1[p2] = v
+
+				return v
+			end
+		end
+	end
+
+	return nil
+end
+
+local function _coerceEasingStyle(p1) --[[ _coerceEasingStyle | Line: 313 ]]
+	if typeof(p1) == "EnumItem" and p1.EnumType == Enum.EasingStyle then
+		return p1
+	end
+
+	if type(p1) == "string" and Enum.EasingStyle[p1] then
+		return Enum.EasingStyle[p1]
+	end
+
+	return Enum.EasingStyle.Quad
+end
+
+local function _coerceEasingDirection(p1) --[[ _coerceEasingDirection | Line: 323 ]]
+	if typeof(p1) == "EnumItem" and p1.EnumType == Enum.EasingDirection then
+		return p1
+	end
+
+	if type(p1) == "string" and Enum.EasingDirection[p1] then
+		return Enum.EasingDirection[p1]
+	end
+
+	return Enum.EasingDirection.Out
+end
+
+local function _composePoseCFrame(p1, p2, p3) --[[ _composePoseCFrame | Line: 333 ]]
+	local v1 = math.rad(p2.X)
+	local v2 = math.rad(p2.Y)
+	local v3 = math.rad(p2.Z)
+
+	if p3 == "YXZ" then
+		return CFrame.new(p1) * CFrame.fromEulerAnglesYXZ(v1, v2, v3)
+	end
+
+	return CFrame.new(p1) * CFrame.Angles(v1, v2, v3)
+end
+
+local function _coerceVector3(p1, p2) --[[ _coerceVector3 | Line: 343 ]]
+	if typeof(p1) == "Vector3" then
+		return p1
+	end
+
+	if type(p1) == "table" then
+		local v1 = tonumber(p1.X)
+
+		if not v1 then
+			v1 = tonumber(p1[1])
+		end
+
+		local v3 = tonumber(p1.Y)
+
+		if not v3 then
+			v3 = tonumber(p1[2])
+		end
+
+		local v5 = tonumber(p1.Z)
+
+		if not v5 then
+			v5 = tonumber(p1[3])
+		end
+
+		if v1 and (v3 and v5) then
+			return Vector3.new(v1, v3, v5)
+		end
+	end
+
+	if typeof(p2) == "Vector3" then
+		return p2
+	end
+
+	return Vector3.new(0, 0, 0)
+end
+
+local function _sampleExpectedCF(p1, p2, p3, p4) --[[ _sampleExpectedCF | Line: 361 | Upvalues: _coerceVector3 (copy), _composePoseCFrame (copy), TweenService (copy) ]]
+	if type(p1) ~= "table" or (type(p2) ~= "string" or p2 == "") then
+		return nil
+	end
+
+	local t = {}
+
+	for i, v in ipairs(p1) do
+		if type(v) == "table" and v.TargetName == p2 then
+			table.insert(t, v)
+		end
+	end
+
+	if #t == 0 then
+		return nil
+	end
+
+	table.sort(t, function(p1, p2) --[[ Line: 376 ]]
+		local v1 = tonumber(p1.Time) or 0
+
+		return v1 < (tonumber(p2.Time) or 0)
+	end)
+
+	local v2 = math.max(0, tonumber(p3) or 0)
+	local v3 = t[1]
+	local v4 = nil
+
+	for i = 1, #t do
+		local v5 = t[i]
+
+		if (tonumber(v5.Time) or 0) <= v2 then
+			v3 = v5
+		else
+			v4 = v5
+
+			break
+		end
+	end
+
+	if not v4 then
+		return _composePoseCFrame(_coerceVector3(v3.Position, Vector3.new(0, 0, 0)), _coerceVector3(v3.Rotation, Vector3.new(0, 0, 0)), p4)
+	end
+
+	local v6 = tonumber(v3.Time) or 0
+	local v7 = tonumber(v4.Time) or v6
+	local v8 = if v6 < v7 then math.clamp((v2 - v6) / (v7 - v6), 0, 1) else 0
+	local EasingStyle = v3.EasingStyle
+	local v11, v12
+
+	if typeof(EasingStyle) == "EnumItem" and EasingStyle.EnumType == Enum.EasingStyle then
+		v11 = v8
+		v12 = EasingStyle
+	elseif type(EasingStyle) == "string" and Enum.EasingStyle[EasingStyle] then
+		v12 = Enum.EasingStyle[EasingStyle]
+		v11 = v8
+	else
+		v11 = v8
+		v12 = Enum.EasingStyle.Quad
+	end
+
+	local EasingDirection = v3.EasingDirection
+	local v14 = TweenService:GetValue(v11, v12, if typeof(EasingDirection) == "EnumItem" and EasingDirection.EnumType == Enum.EasingDirection then EasingDirection elseif type(EasingDirection) == "string" and Enum.EasingDirection[EasingDirection] then Enum.EasingDirection[EasingDirection] else Enum.EasingDirection.Out)
+	local v15 = _coerceVector3(v3.Position, Vector3.new(0, 0, 0))
+	local v16 = _coerceVector3(v3.Rotation, Vector3.new(0, 0, 0))
+	local v17 = _coerceVector3(v4.Position, v15)
+	local v18 = _coerceVector3(v4.Rotation, v16)
+
+	return _composePoseCFrame(v15, v16, p4):Lerp(_composePoseCFrame(v17, v18, p4), v14)
+end
+
+local function _buildCustomPoseMapAtTime(p1, p2, p3) --[[ _buildCustomPoseMapAtTime | Line: 417 | Upvalues: _sampleExpectedCF (copy) ]]
+	local t = {}
+
+	if type(p2) ~= "table" then
+		return t
+	end
+
+	for i, v in ipairs(p2) do
+		if type(v) == "string" and v ~= "" then
+			local v1 = _sampleExpectedCF(p1, v, p3, "YXZ")
+
+			if typeof(v1) == "CFrame" then
+				t[v] = v1
+			end
+		end
+	end
+
+	return t
+end
+
+local function _findCharacterRootMotionMotor(p1) --[[ _findCharacterRootMotionMotor | Line: 433 ]]
+	if typeof(p1) ~= "Instance" or not p1:IsA("Model") then
+		return nil
+	end
+
+	local HumanoidRootPart = p1:FindFirstChild("HumanoidRootPart")
+	local v1 = nil
+
+	for i, v in ipairs(p1:GetDescendants()) do
+		if v:IsA("Motor6D") and (v.Part0 and v.Part1) then
+			if HumanoidRootPart and v.Part0 == HumanoidRootPart then
+				return v
+			end
+
+			if v1 == nil and (v.Name == "RootJoint" or v.Name == "Root") then
+				v1 = v
+			end
+		end
+	end
+
+	return v1
+end
+
+local function _transferCustomRootMotionToWorld(p1, p2) --[[ _transferCustomRootMotionToWorld | Line: 453 | Upvalues: _findCharacterRootMotionMotor (copy) ]]
+	if typeof(p1) ~= "Instance" or not (p1:IsA("Model") and p1.Parent) then
+		return false, nil
+	end
+
+	if type(p2) ~= "table" then
+		return false, nil
+	end
+
+	local v1 = _findCharacterRootMotionMotor(p1)
+
+	if not (v1 and (v1.Part0 and v1.Part1)) then
+		return false, nil
+	end
+
+	local v2 = v1.Part1.Name
+	local v3 = p2[v2]
+
+	if typeof(v3) == "CFrame" then
+		local v4 = v1.Part0.CFrame
+
+		p1:PivotTo(v4 * v1.C0 * v3 * v1.C0:Inverse() * v4:Inverse() * p1:GetPivot())
+		p2[v2] = CFrame.identity
+
+		return true, v2
+	end
+
+	return false, v2
+end
+
+local function _applyCustomPoseMapToCharacter(p1, p2) --[[ _applyCustomPoseMapToCharacter | Line: 481 | Upvalues: _findMotorForTarget (copy) ]]
+	if typeof(p1) ~= "Instance" or not (p1:IsA("Model") and p1.Parent) then
+		return 0
+	end
+
+	if type(p2) ~= "table" then
+		return 0
+	end
+
+	local count = 0
+
+	for k, v in pairs(p2) do
+		local v1 = _findMotorForTarget(p1, k)
+
+		if v1 and (v1.Parent and typeof(v) == "CFrame") then
+			v1.Transform = v
+			count = count + 1
+		end
+	end
+
+	return count
+end
+
+local function _resolveCustomAnimDuration(p1) --[[ _resolveCustomAnimDuration | Line: 500 ]]
+	local v1 = type(p1) == "table" and (p1.Data and p1.Data.Properties or p1.Properties) or nil
+	local v3 = tonumber(if v1 then v1._duration else v1)
+
+	if not v3 then
+		v3 = tonumber(if v1 then v1.Duration else v1)
+
+		if not v3 then
+			v3 = tonumber(if type(p1) == "table" then p1.Duration else false)
+		end
+	end
+
+	if type(v3) == "number" and not (v3 <= 0) then
+		return v3
+	end
+
+	return nil
+end
+
+local function _resolvePoseTimeOffset(p1, p2) --[[ _resolvePoseTimeOffset | Line: 509 | Upvalues: _resolveCustomAnimDuration (copy) ]]
+	if type(p2) ~= "table" or #p2 == 0 then
+		return 0
+	end
+
+	local v1 = type(p1) == "table" and (p1.Data and p1.Data.Properties or p1.Properties) or nil
+	local v3 = tonumber(if v1 then v1.__PoseTimeOffset else v1)
+
+	if type(v3) == "number" and (v3 == v3 and v3 > 0.05) then
+		return v3
+	end
+
+	local v5 = tonumber(if type(p1) == "table" then p1.Time else false)
+	local v6 = _resolveCustomAnimDuration(p1)
+
+	if type(v5) ~= "number" or (v5 ~= v5 or type(v6) ~= "number") then
+		return 0
+	end
+
+	if v5 <= 0.05 then
+		return 0
+	end
+
+	local v7 = (1 / 0)
+	local v8 = (-1 / 0)
+
+	for i, v in ipairs(p2) do
+		if type(v) == "table" then
+			local v9 = tonumber(v.Time) or 0
+
+			if v9 < v7 then
+				v7 = v9
+			end
+
+			if v8 < v9 then
+				v8 = v9
+			end
+		end
+	end
+
+	if v7 == (1 / 0) or v8 == (-1 / 0) then
+		return 0
+	end
+
+	if v7 < v5 - 0.03 or v5 + v6 + 0.03 < v8 then
+		return 0
+	end
+
+	return v5
+end
+
+local function _deserializePoseData(p1, p2) --[[ _deserializePoseData | Line: 553 | Upvalues: ReplicatedStorage (copy), _coerceVector3 (copy) ]]
+	local v1 = nil
+
+	if type(p1) == "table" then
+		v1 = p1
+	elseif type(p1) == "string" and p1 ~= "" then
+		local ok, result = pcall(require(ReplicatedStorage.Schemas).decodePoseData, p1)
+
+		if ok and type(result) == "table" then
+			v1 = result
+		end
+	end
+
+	if type(v1) ~= "table" then
+		return nil
+	end
+
+	local t = {}
+
+	for i, v in ipairs(v1) do
+		local v2, v3
+
+		if type(v) == "table" then
+			local TargetName = v.TargetName
+
+			if type(TargetName) == "string" and TargetName ~= "" then
+				local t2 = {}
+
+				t2.Time = tonumber(v.Time) or 0
+				t2.TargetName = TargetName
+				t2.Position = _coerceVector3(v.Position, Vector3.new(0, 0, 0))
+				t2.Rotation = _coerceVector3(v.Rotation, Vector3.new(0, 0, 0))
+
+				local EasingStyle = v.EasingStyle
+
+				v2 = if typeof(EasingStyle) == "EnumItem" and EasingStyle.EnumType == Enum.EasingStyle then EasingStyle elseif type(EasingStyle) == "string" and Enum.EasingStyle[EasingStyle] then Enum.EasingStyle[EasingStyle] else Enum.EasingStyle.Quad
+				t2.EasingStyle = v2
+
+				local EasingDirection = v.EasingDirection
+
+				v3 = if typeof(EasingDirection) == "EnumItem" and EasingDirection.EnumType == Enum.EasingDirection then EasingDirection elseif type(EasingDirection) == "string" and Enum.EasingDirection[EasingDirection] then Enum.EasingDirection[EasingDirection] else Enum.EasingDirection.Out
+				t2.EasingDirection = v3
+				table.insert(t, t2)
+			end
+		end
+	end
+
+	table.sort(t, function(p1, p2) --[[ Line: 584 ]]
+		local v1 = tonumber(p1.Time) or 0
+
+		return v1 < (tonumber(p2.Time) or 0)
+	end)
+
+	return t
+end
+
+local function _collectCustomTargetNames(p1) --[[ _collectCustomTargetNames | Line: 590 ]]
+	local t = {}
+	local t2 = {}
+
+	if type(p1) ~= "table" then
+		return t
+	end
+
+	for i, v in ipairs(p1) do
+		local v1 = type(v) == "table" and v.TargetName or nil
+
+		if type(v1) == "string" and (v1 ~= "" and not t2[v1]) then
+			t2[v1] = true
+			table.insert(t, v1)
+		end
+	end
+
+	table.sort(t)
+
+	return t
+end
+
+local function _summarizeCustomTargetActivity(p1) --[[ _summarizeCustomTargetActivity | Line: 607 | Upvalues: _coerceVector3 (copy) ]]
+	local t = {}
+
+	if type(p1) ~= "table" then
+		return t
+	end
+
+	for i, v in ipairs(p1) do
+		if type(v) == "table" then
+			local TargetName = v.TargetName
+
+			if type(TargetName) == "string" and TargetName ~= "" then
+				local v1 = t[TargetName]
+
+				if not v1 then
+					local t2 = {
+						MaxPos = 0,
+						MaxRot = 0
+					}
+
+					t[TargetName] = t2
+					v1 = t2
+				end
+
+				local v2 = _coerceVector3(v.Position, Vector3.new(0, 0, 0))
+				local v3 = _coerceVector3(v.Rotation, Vector3.new(0, 0, 0))
+
+				v1.MaxPos = math.max(v1.MaxPos, v2.Magnitude)
+				v1.MaxRot = math.max(v1.MaxRot, math.abs(v3.X), math.abs(v3.Y), (math.abs(v3.Z)))
+			end
+		end
+	end
+
+	return t
+end
+
+local function _filterMeaningfulCustomTargets(p1, p2) --[[ _filterMeaningfulCustomTargets | Line: 639 | Upvalues: _summarizeCustomTargetActivity (copy) ]]
+	local v1 = _summarizeCustomTargetActivity(p1)
+	local t = {}
+	local t2 = {}
+
+	for i, v in ipairs(p2) do
+		local v2 = v1[v]
+		local v4 = tonumber(if v2 then v2.MaxPos else v2) or 0
+		local v6 = tonumber(if v2 then v2.MaxRot else v2) or 0
+
+		if v4 > 0.02 or v6 > 1 then
+			table.insert(t2, v)
+		end
+
+		table.insert(t, string.format("%s[p=%.3f r=%.2f]", tostring(v), v4, v6))
+	end
+
+	return t2, table.concat(t, "; ")
+end
+
+local function _isStandaloneCustomOverlayPayload(p1) --[[ _isStandaloneCustomOverlayPayload | Line: 655 | Upvalues: _deserializePoseData (copy), _resolvePoseTimeOffset (copy), _collectCustomTargetNames (copy), _filterMeaningfulCustomTargets (copy), _resolveCustomAuthoredDuration (copy), _resolveCustomPlaybackDuration (copy) ]]
+	if type(p1) ~= "table" or #p1 ~= 1 then
+		return nil, "not_single_custom_payload"
+	end
+
+	local v1 = p1[1]
+
+	if type(v1) ~= "table" or v1.EventType ~= "CustomAnimation" then
+		return nil, "not_custom_animation"
+	end
+
+	local v2 = v1.Data and v1.Data.Properties or (v1.Properties or {})
+
+	if v2.StopOthers == true then
+		return nil, "stop_others_enabled"
+	end
+
+	local v3 = _deserializePoseData(v2.PoseData, v1)
+
+	if type(v3) ~= "table" or #v3 == 0 then
+		return nil, "empty_pose_data"
+	end
+
+	local v4 = _resolvePoseTimeOffset(v1, v3)
+	local v5 = _collectCustomTargetNames(v3)
+
+	if #v5 == 0 then
+		return nil, "no_targets"
+	end
+
+	local isKeepFinalPosition = v2.KeepFinalPosition == true
+	local v6, v7 = _filterMeaningfulCustomTargets(v3, v5)
+
+	if not isKeepFinalPosition and #v6 > 0 then
+		v5 = v6
+	end
+
+	local v8 = _resolveCustomAuthoredDuration(v1) or 1
+	local v9 = _resolveCustomPlaybackDuration(v1) or math.max(0.05, v8)
+	local v11 = math.max(0, tonumber(v2.BlendIn) or 0)
+	local t = {
+		Entry = v1,
+		Props = v2,
+		PoseData = v3,
+		PoseTimeOffset = v4,
+		TargetNames = v5,
+		TargetSummary = v7,
+		Duration = v9,
+		RawDuration = v8,
+		UID = v1.uid,
+		BlendIn = v11,
+		BlendOut = math.max(0, tonumber(v2.BlendOut) or 0),
+		KeepFinalPosition = isKeepFinalPosition
+	}
+
+	t.LiveOverlaySource = tostring(v2.__LiveOverlaySource or "")
+	t.LiveOverlayReason = tostring(v2.__LiveOverlayReason or "")
+	t.LiveOverlayAnimId = tostring(v2.__LiveOverlayAnimId or "")
+	t.LiveOverlayAnimUid = tostring(v2.__LiveOverlayAnimUid or "")
+
+	return t, nil
+end
+
+local function _shouldKeepCustomFinalPosition(p1) --[[ _shouldKeepCustomFinalPosition | Line: 711 ]]
+	if type(p1) ~= "table" then
+		return false
+	end
+
+	local v2
+
+	if type(p1.Properties) == "table" or type(p1.Data) == "table" and type(p1.Data.Properties) == "table" then
+		local v1
+
+		v1 = p1.Data and p1.Data.Properties or (p1.Properties or p1)
+		v2 = v1
+	else
+		v2 = p1
+	end
+
+	return v2.KeepFinalPosition == true
+end
+
+local function _startCustomFinalPoseHold(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10) --[[ _startCustomFinalPoseHold | Line: 722 | Upvalues: _collectCustomTargetNames (copy), _resolveCustomPlaybackSampleTime (copy), _buildCustomPoseMapAtTime (copy), _transferCustomRootMotionToWorld (copy), v6 (ref), t4 (copy), _applyCustomPoseMapToCharacter (copy) ]]
+	if typeof(p1) ~= "Instance" or not (p1:IsA("Model") and p1.Parent) then
+		return false
+	end
+
+	if type(p2) ~= "table" or #p2 == 0 then
+		return false
+	end
+
+	local t = {}
+
+	if type(p5) == "table" then
+		for i, v in ipairs(p5) do
+			if type(v) == "string" and v ~= "" then
+				table.insert(t, v)
+			end
+		end
+	end
+
+	if #t == 0 then
+		t = _collectCustomTargetNames(p2)
+	end
+
+	if #t == 0 then
+		return false
+	end
+
+	local v2 = tonumber(p3)
+
+	if type(v2) ~= "number" or v2 <= 0 then
+		v2 = 0
+
+		for i, v in ipairs(p2) do
+			local v4 = tonumber(if type(v) == "table" then v.Time else false) or 0
+
+			if v2 < v4 then
+				v2 = v4
+			end
+		end
+	end
+
+	local v5 = math.max(0.05, v2)
+	local v62 = tonumber(p4) or 0
+	local v7 = tonumber(p8)
+
+	if type(v7) ~= "number" then
+		v7 = v5
+	end
+
+	local v8 = math.max(0, v7)
+	local v9 = _buildCustomPoseMapAtTime(p2, t, (_resolveCustomPlaybackSampleTime(p9, v8, p10, v62)))
+
+	if next(v9) == nil then
+		return false
+	end
+
+	local v10, v11 = _transferCustomRootMotionToWorld(p1, v9)
+
+	v6(p1, "hold_final")
+	t4[p1] = {
+		Duration = 0,
+		BlendIn = 0,
+		BlendOut = 0,
+		KeepFinalPosition = true,
+		StartTime = os.clock(),
+		PoseData = p2,
+		PoseTimeOffset = v62,
+		TargetNames = t,
+		UID = p6,
+		HoldPoseByTarget = v9,
+		ExpectedByTarget = v9
+	}
+
+	local v12 = _applyCustomPoseMapToCharacter(p1, v9)
+	local _ = "client_custom_overlay_hold_start_" .. tostring(p1) .. ":" .. tostring(p6)
+
+	string.format("stage=client_custom_overlay_hold_start char=%s uid=%s reason=%s targets=%d sample=%.4f movedRoot=%s rootTarget=%s appliedNow=%d", tostring(p1.Name), tostring(p6), tostring(p7 or "hold_final"), #t, tonumber(v8) or 0, tostring(v10), tostring(v11), v12)
+
+	return true
+end
+
+local function _cframeDelta(p1, p2) --[[ _cframeDelta | Line: 819 ]]
+	local v1 = p1:ToObjectSpace(p2)
+	local _, v2 = v1:ToAxisAngle()
+
+	if v2 ~= v2 then
+		v2 = 0
+	end
+
+	return v1.Position.Magnitude, math.deg((math.abs(v2)))
+end
+
+local function _fmtDeltaPair(p1, p2) --[[ _fmtDeltaPair | Line: 829 ]]
+	if type(p1) == "number" and type(p2) == "number" then
+		return string.format("%.4f/%.2f", tonumber(p1) or 0, tonumber(p2) or 0)
+	end
+
+	return "none"
+end
+
+local function _summarizeAnimatorTracks(p1) --[[ _summarizeAnimatorTracks | Line: 836 ]]
+	local Humanoid = p1:FindFirstChildOfClass("Humanoid")
+	local v1 = Humanoid and Humanoid:FindFirstChildOfClass("Animator")
+
+	if not v1 then
+		return 0, "no_animator"
+	end
+
+	local ok, result = pcall(function() --[[ Line: 842 | Upvalues: v1 (copy) ]]
+		return v1:GetPlayingAnimationTracks()
+	end)
+
+	if not ok or type(result) ~= "table" then
+		return 0, "tracks_unavailable"
+	end
+
+	local count = 0
+	local t = {}
+
+	for i, v in ipairs(result) do
+		count = count + 1
+
+		if #t < 3 then
+			local v2 = "?"
+			local v3 = -1
+			local v4 = -1
+			local v5 = -1
+			local v6 = "?"
+
+			pcall(function() --[[ Line: 858 | Upvalues: v (copy), v2 (ref) ]]
+				local Animation = v.Animation
+
+				if not Animation then
+					return
+				end
+
+				if type(Animation.AnimationId) ~= "string" then
+					return
+				end
+
+				v2 = Animation.AnimationId
+			end)
+			pcall(function() --[[ Line: 864 | Upvalues: v3 (ref), v (copy) ]]
+				v3 = v.WeightCurrent
+			end)
+			pcall(function() --[[ Line: 865 | Upvalues: v4 (ref), v (copy) ]]
+				v4 = v.Speed
+			end)
+			pcall(function() --[[ Line: 866 | Upvalues: v5 (ref), v (copy) ]]
+				v5 = v.TimePosition
+			end)
+			pcall(function() --[[ Line: 867 | Upvalues: v6 (ref), v (copy) ]]
+				v6 = tostring(v.Priority)
+			end)
+
+			local format = string.format
+			local v7 = v2
+			local v8 = tostring(v7)
+			local v9 = v3
+			local v10 = tonumber(v9) or -1
+			local v11 = v4
+			local v12 = tonumber(v11) or -1
+			local v13 = v5
+			local v14 = tonumber(v13) or -1
+			local v15 = v6
+
+			table.insert(t, format("%s[w=%.2f sp=%.2f t=%.2f pr=%s]", v8, v10, v12, v14, (tostring(v15))))
+		end
+	end
+
+	return count, table.concat(t, ";")
+end
+
+local function _holdClientCoreMute(p1, p2) --[[ _holdClientCoreMute | Line: 874 ]]
+	if type(p2) ~= "table" or p2.Enabled ~= true then
+		return
+	end
+
+	local Humanoid = p1:FindFirstChildOfClass("Humanoid")
+	local v1 = Humanoid and Humanoid:FindFirstChildOfClass("Animator")
+
+	if not v1 then
+		return
+	end
+
+	local ok, result = pcall(function() --[[ Line: 885 | Upvalues: v1 (copy) ]]
+		return v1:GetPlayingAnimationTracks()
+	end)
+
+	if not ok or type(result) ~= "table" then
+		return
+	end
+
+	local count = 0
+
+	for i, v in ipairs(result) do
+		local v2 = nil
+
+		pcall(function() --[[ Line: 895 | Upvalues: v2 (ref), v (copy) ]]
+			v2 = v.Priority
+		end)
+
+		if v2 == Enum.AnimationPriority.Core then
+			if p2.MutedTracks[v] == nil then
+				local v3 = 1
+
+				pcall(function() --[[ Line: 901 | Upvalues: v3 (ref), v (copy) ]]
+					v3 = v.WeightCurrent
+				end)
+				p2.MutedTracks[v] = v3
+			end
+
+			pcall(function() --[[ Line: 906 | Upvalues: v (copy) ]]
+				v:AdjustWeight(0, 0.05)
+			end)
+			count = count + 1
+		end
+	end
+
+	local count2 = 0
+
+	for k in pairs(p2.MutedTracks) do
+		count2 = count2 + 1
+	end
+
+	local _ = "client_core_mute_hold_" .. tostring(p1)
+	local format = string.format
+
+	format("stage=client_core_mute_hold char=%s muted=%d tracked=%d", tostring(p1.Name), count, count2)
+end
+
+local function _restoreClientCoreMute(p1, p2, p3) --[[ _restoreClientCoreMute | Line: 929 ]]
+	if type(p2) ~= "table" or (p2.Enabled ~= true or p2.Restored == true) then
+		return
+	end
+
+	p2.Restored = true
+
+	local count = 0
+
+	for k, v in pairs(p2.MutedTracks) do
+		pcall(function() --[[ Line: 937 | Upvalues: k (copy), v (copy) ]]
+			k:AdjustWeight(tonumber(v) or 1, 0.08)
+		end)
+		count = count + 1
+	end
+
+	string.format("stage=client_core_mute_restore char=%s reason=%s restored=%d", tostring(p1 and p1.Name), tostring(p3), count)
+end
+
+local function getEventHandler(p1, p2) --[[ getEventHandler | Line: 951 | Upvalues: t (copy), EventTypes (copy) ]]
+	local v1 = p1 .. "/" .. p2
+
+	if t[v1] then
+		return t[v1]
+	end
+
+	local v2 = EventTypes:FindFirstChild(p1)
+	local v3 = if v2 then v2:FindFirstChild(p2) else v2
+
+	if v3 then
+		local v4 = require(v3)
+
+		t[v1] = v4
+
+		return v4
+	end
+
+	return nil
+end
+
+local function _buildLocalCustomPoseBridge(p1, p2, p3, p4) --[[ _buildLocalCustomPoseBridge | Line: 964 | Upvalues: t (copy), EventTypes (copy), _coerceVector3 (copy), _resolveCustomEntryProps (copy), _resolveCustomAuthoredDuration (copy) ]]
+	if type(p1) ~= "table" or #p1 == 0 then
+		return nil, "empty_pose_data"
+	end
+
+	local v1
+
+	if t["General/Pose"] then
+		v1 = t["General/Pose"]
+	else
+		local General = EventTypes:FindFirstChild("General")
+		local v2 = if General then General:FindFirstChild("Pose") else General
+
+		if v2 then
+			local v3 = require(v2)
+
+			t["General/Pose"] = v3
+			v1 = v3
+		else
+			v1 = nil
+		end
+	end
+
+	if type(v1) ~= "table" then
+		return nil, "missing_pose_handler"
+	end
+
+	if type(v1.onEventScrub) ~= "function" then
+		return nil, "missing_pose_handler"
+	end
+
+	local tbl = {}
+
+	for i, v in ipairs(p1) do
+		local v4 = type(v) == "table" and v.TargetName or nil
+
+		if type(v4) == "string" and v4 ~= "" then
+			tbl[v4] = tbl[v4] or {}
+			table.insert(tbl[v4], v)
+		end
+	end
+
+	local count = 0
+	local t2 = {}
+	local t3 = {}
+	local t4 = {}
+
+	for k, v in pairs(tbl) do
+		table.sort(v, function(p1, p2) --[[ Line: 990 ]]
+			local v1 = tonumber(p1.Time) or 0
+
+			return v1 < (tonumber(p2.Time) or 0)
+		end)
+		count = count + 1
+
+		local v7 = nil
+
+		for i = 1, #v do
+			local v8, v9, v10
+			local v11 = v[i]
+			local v12 = v[i + 1]
+			local v13 = tonumber(v11.Time) or 0
+
+			v8 = if v12 then math.max(0, (tonumber(v12.Time) or v13) - v13) else 0
+
+			local t5 = {}
+			local v16 = type(v1.PropertyDefaults) == "table" and v1.PropertyDefaults or nil
+
+			if v16 then
+				for k2, v2 in pairs(v16) do
+					t5[k2] = v2
+				end
+			end
+
+			t5.TargetName = k
+			t5.Position = _coerceVector3(v11.Position, Vector3.new(0, 0, 0))
+			t5.Rotation = _coerceVector3(v11.Rotation, Vector3.new(0, 0, 0))
+
+			local EasingStyle = v11.EasingStyle
+
+			v9 = if typeof(EasingStyle) == "EnumItem" and EasingStyle.EnumType == Enum.EasingStyle then EasingStyle elseif type(EasingStyle) == "string" and Enum.EasingStyle[EasingStyle] then Enum.EasingStyle[EasingStyle] else Enum.EasingStyle.Quad
+			t5.EasingStyle = v9
+
+			local EasingDirection = v11.EasingDirection
+
+			v10 = if typeof(EasingDirection) == "EnumItem" and EasingDirection.EnumType == Enum.EasingDirection then EasingDirection elseif type(EasingDirection) == "string" and Enum.EasingDirection[EasingDirection] then Enum.EasingDirection[EasingDirection] else Enum.EasingDirection.Out
+			t5.EasingDirection = v10
+
+			local t6 = {
+				EventType = "Pose",
+				EventCategory = "General",
+				Running = false,
+				Time = v13,
+				Duration = v8,
+				Handler = v1,
+				Data = {
+					Properties = t5,
+					Target = p2
+				}
+			}
+
+			table.insert(t2, t6)
+
+			if v7 then
+				t3[v7] = t6
+				t4[t6] = v7
+			end
+
+			v7 = t6
+		end
+	end
+
+	table.sort(t2, function(p1, p2) --[[ Line: 1039 ]]
+		local v2 = tonumber(if p1 then p1.Time else p1) or 0
+		local v4 = tonumber(if p2 then p2.Time else p2) or 0
+
+		if v2 == v4 then
+			local v6 = tostring(p1 and (p1.Data and p1.Data.Properties) and p1.Data.Properties.TargetName or "")
+
+			return v6 < tostring(if p2 and (p2.Data and p2.Data.Properties) then p2.Data.Properties.TargetName or "" else "")
+		end
+
+		return v2 < v4
+	end)
+
+	if #t2 == 0 then
+		return nil, "no_pose_entries"
+	end
+
+	local t5 = {
+		Entries = t2,
+		RunningEvents = {},
+		NextMap = t3,
+		PrevMap = t4,
+		TimeOffset = tonumber(p3) or 0,
+		Props = _resolveCustomEntryProps(p4),
+		RawDuration = _resolveCustomAuthoredDuration(p4),
+		TargetModel = p2,
+		TargetCount = count
+	}
+
+	t5.MockManager = {
+		now = 0,
+		moveEditor = {
+			dummy = p2
+		},
+		getNextEvent = function(p1) --[[ getNextEvent | Line: 1068 | Upvalues: t5 (copy) ]]
+			return t5.NextMap[p1]
+		end,
+		getPreviousEvent = function(p1) --[[ getPreviousEvent | Line: 1071 | Upvalues: t5 (copy) ]]
+			return t5.PrevMap[p1]
+		end
+	}
+
+	return t5, nil
+end
+
+local function _stepLocalCustomPoseBridge(p1, p2, p3, p4) --[[ _stepLocalCustomPoseBridge | Line: 1078 | Upvalues: _resolveCustomPlaybackSampleTime (copy) ]]
+	if type(p1) ~= "table" then
+		return 0
+	end
+
+	if type(p1.Entries) ~= "table" then
+		return 0
+	end
+
+	local v5 = _resolveCustomPlaybackSampleTime(p1, math.max(0, tonumber(p2) or 0), tonumber(p1.RawDuration), (tonumber(p1.TimeOffset)))
+	local v8 = math.max(0, tonumber(p1.RawDuration) or tonumber(p3) or 0)
+	local v10 = math.clamp(tonumber(p4) or 1, 0, 1)
+	local count = 0
+
+	if type(p1.MockManager) == "table" then
+		p1.MockManager.now = v5
+	end
+
+	for i, v in ipairs(p1.Entries) do
+		local v11
+
+		if v and v.Data then
+			v.Data.Target = p1.TargetModel or v.Data.Target
+			v.Data.__CustomAnimOverallBlendWeight = v10
+		end
+
+		local v14 = tonumber(if v then v.Time else v) or 0
+		local v18 = math.max(0, tonumber(if v then v.Duration else v) or 0)
+
+		if v18 <= 0 then
+			local v19 = p1.NextMap and p1.NextMap[v] or nil
+
+			if v19 then
+				v18 = math.max(0, (tonumber(v19.Time) or v14) - v14)
+			elseif v14 < v8 then
+				v18 = v8 - v14
+			end
+		end
+
+		v11 = if v18 > 0 then if v14 <= v5 then if v5 <= v14 + v18 then true else false else false elseif math.abs(v5 - v14) <= 0.0005 then true else false
+
+		if v11 then
+			local v23 = v18 > 0 and math.clamp(v5 - v14, 0, v18) or 0
+
+			if not p1.RunningEvents[v] then
+				p1.RunningEvents[v] = true
+				v.Running = true
+
+				if v.Handler and v.Handler.onEventPlay then
+					pcall(v.Handler.onEventPlay, v, 0)
+				end
+			end
+
+			if v.Handler and v.Handler.onEventScrub then
+				pcall(v.Handler.onEventScrub, v, v23, p1.MockManager)
+				count = count + 1
+			end
+
+			continue
+		end
+
+		if p1.RunningEvents[v] then
+			p1.RunningEvents[v] = nil
+			v.Running = false
+
+			if v.Data then
+				v.Data.__CustomAnimOverallBlendWeight = nil
+			end
+
+			if v.Handler and v.Handler.onEventEnd then
+				pcall(v.Handler.onEventEnd, v, p1.MockManager)
+			end
+		end
+	end
+
+	return count
+end
+
+local function _stopLocalCustomPoseBridge(p1, p2) --[[ _stopLocalCustomPoseBridge | Line: 1150 ]]
+	if type(p1) ~= "table" then
+		return 0
+	end
+
+	if type(p1.RunningEvents) ~= "table" then
+		return 0
+	end
+
+	local count = 0
+
+	for k in pairs(p1.RunningEvents) do
+		p1.RunningEvents[k] = nil
+
+		if k then
+			k.Running = false
+
+			if k.Data then
+				k.Data.__CustomAnimOverallBlendWeight = nil
+			end
+
+			if not p2 and (k.Handler and k.Handler.onEventEnd) then
+				pcall(k.Handler.onEventEnd, k, p1.MockManager)
+			end
+		end
+
+		count = count + 1
+	end
+
+	return count
+end
+
+local function _startCustomReturnBlendFromTargets(p1, p2, p3, p4) --[[ _startCustomReturnBlendFromTargets | Line: 1172 | Upvalues: _findMotorForTarget (copy), v6 (ref), t3 (copy) ]]
+	if typeof(p1) ~= "Instance" or not (p1:IsA("Model") and p1.Parent) then
+		return false
+	end
+
+	if type(p2) ~= "table" or #p2 == 0 then
+		local _ = "client_return_blend_skip_targets_" .. tostring(p1)
+		local format = string.format
+
+		format("stage=client_return_blend_skip char=%s reason=no_targets stopReason=%s", tostring(p1.Name), (tostring(p4)))
+
+		return false
+	end
+
+	local t = {}
+	local count = 0
+
+	for i, v in ipairs(p2) do
+		local v2 = _findMotorForTarget(p1, v)
+
+		if v2 and v2.Parent then
+			t[v] = {
+				Motor = v2,
+				StartCF = v2.Transform
+			}
+			count = count + 1
+		end
+	end
+
+	if count <= 0 then
+		local _ = "client_return_blend_skip_snapshot_" .. tostring(p1)
+		local format = string.format
+
+		format("stage=client_return_blend_skip char=%s reason=no_snapshot stopReason=%s", tostring(p1.Name), (tostring(p4)))
+
+		return false
+	end
+
+	v6(p1, "replace")
+
+	local t2 = {
+		Duration = 0.24,
+		Cancelled = false,
+		StartClock = os.clock(),
+		Targets = t,
+		UID = p3,
+		Reason = p4
+	}
+
+	t3[p1] = t2
+	string.format("stage=client_return_blend_start char=%s uid=%s targets=%d duration=%.3f reason=%s", tostring(p1.Name), tostring(t2.UID), count, tonumber(t2.Duration) or 0, (tostring(p4)))
+
+	return true
+end
+
+v6 = function(p1, p2) --[[ Line: 1237 | Upvalues: t3 (copy) ]]
+	local v1 = t3[p1]
+
+	if not v1 then
+		return false
+	end
+
+	v1.Cancelled = true
+	t3[p1] = nil
+
+	local _ = "client_return_blend_cancel_" .. tostring(p1)
+
+	string.format("stage=client_return_blend_cancel char=%s reason=%s", tostring(if p1 then p1.Name else p1), (tostring(p2)))
+
+	return true
+end
+
+local function _startCustomReturnBlend(p1, p2, p3, p4) --[[ _startCustomReturnBlend | Line: 1256 | Upvalues: _startCustomReturnBlendFromTargets (copy) ]]
+	if typeof(p1) ~= "Instance" or not (p1:IsA("Model") and p1.Parent) then
+		return false
+	end
+
+	local v1 = if p2 then p2.Diag else p2
+	local v2 = type(v1) == "table" and v1.CustomTargets or nil
+	local v4, v5, v6
+
+	if p3 then
+		v4 = p3.uid
+
+		if v4 then
+			v5 = p1
+			v6 = v2
+		else
+			v5 = p1
+			v6 = v2
+			v4 = nil
+		end
+	else
+		v5 = p1
+		v6 = v2
+		v4 = nil
+	end
+
+	return _startCustomReturnBlendFromTargets(v5, v6, v4, p4)
+end
+
+local function _stepCustomReturnBlends(p1) --[[ _stepCustomReturnBlends | Line: 1266 | Upvalues: t3 (copy), TweenService (copy) ]]
+	for k, v in pairs(t3) do
+		local v1 = false
+
+		if v.Cancelled then
+			v1 = true
+		elseif typeof(k) == "Instance" and (k:IsA("Model") and k.Parent) then
+			local v3 = math.max(0.01, tonumber(v.Duration) or 0.24)
+			local v5 = math.clamp((p1 - (tonumber(v.StartClock) or p1)) / v3, 0, 1)
+			local v6 = TweenService:GetValue(v5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			local count = 0
+			local count2 = 0
+
+			for k2, v7 in pairs(v.Targets) do
+				local v72 = if v7 then v7.Motor else v7
+
+				if v72 and v72.Parent then
+					local Transform = v72.Transform
+					local StartCF = v7.StartCF
+
+					if typeof(StartCF) == "CFrame" and typeof(Transform) == "CFrame" then
+						v72.Transform = StartCF:Lerp(Transform, v6)
+						count = count + 1
+					end
+
+					continue
+				end
+
+				count2 = count2 + 1
+			end
+
+			local v8 = tostring(k)
+			local _ = "client_return_blend_hold_" .. v8 .. ":" .. tostring(v.UID)
+
+			string.format("stage=client_return_blend_hold char=%s uid=%s alpha=%.3f applied=%d missing=%d", tostring(k.Name), tostring(v.UID), tonumber(v5) or 0, count, count2)
+
+			if v5 >= 1 then
+				string.format("stage=client_return_blend_done char=%s uid=%s reason=%s", tostring(k.Name), tostring(v.UID), (tostring(v.Reason)))
+				v1 = true
+			end
+		else
+			v1 = true
+		end
+
+		if v1 and t3[k] == v then
+			t3[k] = nil
+		end
+	end
+end
+
+local function _isStandaloneCustomTrack(p1) --[[ _isStandaloneCustomTrack | Line: 1323 ]]
+	if type(p1) ~= "table" then
+		return false
+	end
+
+	if type(p1.Events) ~= "table" then
+		return false
+	end
+
+	if #p1.Events ~= 1 then
+		return false
+	end
+
+	local v1 = p1.Events[1]
+
+	return if type(v1) == "table" then v1.EventType == "CustomAnimation" else false
+end
+
+local function _stopStandaloneCustomOverlay(p1, p2, p3) --[[ _stopStandaloneCustomOverlay | Line: 1334 | Upvalues: t4 (copy), _describeOverlayState (copy), _startCustomReturnBlendFromTargets (copy) ]]
+	local v1 = t4[p1]
+
+	if not v1 then
+		return false
+	end
+
+	t4[p1] = nil
+
+	local v2 = if p3 == false then false else not (if type(v1) == "table" then if v1.KeepFinalPosition == true then true else false else false)
+
+	string.format("stage=client_custom_overlay_stop_now char=%s reason=%s returnBlend=%s overlay={%s}", tostring(if p1 then p1.Name else p1), tostring(p2 or "overlay_stop"), tostring(v2), _describeOverlayState(v1))
+
+	if v2 then
+		_startCustomReturnBlendFromTargets(p1, v1.TargetNames, v1.UID, p2 or "overlay_stop")
+	end
+
+	local v6 = tostring(p1)
+	local _ = "client_custom_overlay_stop_" .. v6 .. ":" .. tostring(v1.UID)
+
+	string.format("stage=client_custom_overlay_stop char=%s uid=%s reason=%s returnBlend=%s", tostring(if p1 then p1.Name else p1), tostring(v1.UID), tostring(p2 or "overlay_stop"), (tostring(v2)))
+
+	return true
+end
+
+local function _computeCustomOverlayWeight(p1, p2, p3, p4) --[[ _computeCustomOverlayWeight | Line: 1365 ]]
+	local v2 = math.max(0, tonumber(p1) or 0)
+	local v4 = math.max(0.05, tonumber(p2) or 0.05)
+	local v6 = math.max(0, tonumber(p3) or 0)
+	local v8 = math.max(0, tonumber(p4) or 0)
+
+	return math.clamp(math.min(if v6 > 0 then math.clamp(v2 / v6, 0, 1) else 1, if v8 > 0 then math.clamp((v4 - v2) / v8, 0, 1) else 1), 0, 1)
+end
+
+local function _stepActiveCustomOverlays(p1, p2) --[[ _stepActiveCustomOverlays | Line: 1384 | Upvalues: t4 (copy), _resolveCustomPlaybackSampleTime (copy), _computeCustomOverlayWeight (copy), _findMotorForTarget (copy), _sampleExpectedCF (copy), _maybeSendMoveEditorPreviewPose (copy), _summarizeAnimatorTracks (copy), _buildCustomPoseMapAtTime (copy), _transferCustomRootMotionToWorld (copy) ]]
+	local v1 = tostring(p2 or "unknown")
+
+	for k, v in pairs(t4) do
+		local v2 = false
+		local v3 = false
+
+		if typeof(k) == "Instance" and (k:IsA("Model") and k.Parent) then
+			if type(v) == "table" then
+				if not v._ccDebugFirstStep then
+					v._ccDebugFirstStep = true
+				end
+
+				local v5 = math.max(0.05, tonumber(v.Duration) or 0.05)
+				local v7 = math.max(0, p1 - (tonumber(v.StartTime) or p1))
+
+				if v5 < v7 then
+					v3 = true
+					v2 = not (if v.KeepFinalPosition == true then true else false)
+				else
+					local v11 = _resolveCustomPlaybackSampleTime(v, v7, tonumber(v.RawDuration), (tonumber(v.PoseTimeOffset)))
+					local v12 = _computeCustomOverlayWeight(v7, v5, v.BlendIn, v.BlendOut)
+					local count = 0
+					local count2 = 0
+					local t = {}
+					local t2 = {}
+					local v13 = type(v.LastBaseByTarget) == "table" and v.LastBaseByTarget or nil
+					local v14 = -1
+					local v15 = -1
+					local v16 = -1
+
+					for v19, v20 in ipairs(v.TargetNames or {}) do
+						local v21 = _findMotorForTarget(k, v20)
+
+						if v21 and v21.Parent then
+							local Transform = v21.Transform
+							local v22 = _sampleExpectedCF(v.PoseData, v20, v11, "YXZ")
+
+							if typeof(Transform) == "CFrame" and typeof(v22) == "CFrame" then
+								t2[v20] = Transform
+
+								local v23 = v22:ToObjectSpace(Transform)
+								local Magnitude = v23.Position.Magnitude
+								local _, v24 = v23:ToAxisAngle()
+
+								if v24 ~= v24 then
+									v24 = 0
+								end
+
+								local v26 = math.deg((math.abs(v24)))
+
+								if v14 < v26 then
+									v14 = v26
+								end
+
+								local v27 = v13 and v13[v20] or nil
+
+								if typeof(v27) == "CFrame" then
+									local v28 = v27:ToObjectSpace(Transform)
+									local Magnitude2 = v28.Position.Magnitude
+									local _2, v29 = v28:ToAxisAngle()
+
+									if v29 ~= v29 then
+										v29 = 0
+									end
+
+									local v31 = math.deg((math.abs(v29)))
+
+									if v15 < v31 then
+										v15 = v31
+									end
+								end
+
+								local v32 = Transform:Lerp(v22, v12)
+
+								v21.Transform = v32
+								t[v20] = v32
+
+								local v33 = v22:ToObjectSpace(v32)
+								local Magnitude2 = v33.Position.Magnitude
+								local _2, v34 = v33:ToAxisAngle()
+
+								if v34 ~= v34 then
+									v34 = 0
+								end
+
+								local v36 = math.deg((math.abs(v34)))
+
+								if v16 < v36 then
+									v16 = v36
+								end
+
+								count = count + 1
+							end
+
+							continue
+						end
+
+						count2 = count2 + 1
+					end
+
+					v.ExpectedByTarget = t
+					v.LastBaseByTarget = t2
+
+					if not v._ccDebugNextLogTime then
+						v._ccDebugNextLogTime = 0
+					end
+
+					if v._ccDebugNextLogTime <= p1 then
+						v._ccDebugNextLogTime = p1 + 0.3
+					end
+
+					_maybeSendMoveEditorPreviewPose(k, v, p1)
+
+					local _, _2 = _summarizeAnimatorTracks(k)
+				end
+			else
+				v2 = true
+			end
+		else
+			v2 = true
+
+			if not v._ccDebugRemoveLogged then
+				v._ccDebugRemoveLogged = true
+			end
+		end
+
+		if v3 and (type(v) == "table" and (typeof(k) == "Instance" and (k:IsA("Model") and k.Parent))) then
+			local v37 = type(v.HoldPoseByTarget) == "table" and v.HoldPoseByTarget or nil
+
+			if v.KeepFinalPosition == true and v37 == nil then
+				local v43 = _buildCustomPoseMapAtTime(v.PoseData, v.TargetNames, (_resolveCustomPlaybackSampleTime(v, math.max(0.05, tonumber(v.Duration) or 0.05), tonumber(v.RawDuration), (tonumber(v.PoseTimeOffset)))))
+
+				if next(v43) ~= nil then
+					local v44, v45 = _transferCustomRootMotionToWorld(k, v43)
+
+					v.HoldPoseByTarget = v43
+					v.ExpectedByTarget = v43
+
+					local v46 = tostring(k)
+					local _ = "client_custom_overlay_hold_capture_" .. v46 .. ":" .. tostring(v.UID)
+
+					string.format("stage=client_custom_overlay_hold_capture phase=%s char=%s uid=%s movedRoot=%s rootTarget=%s", tostring(v1), tostring(k.Name), tostring(v.UID), tostring(v44), (tostring(v45)))
+				end
+
+				v37 = v43
+			end
+
+			local count = 0
+			local t = {}
+
+			if type(v37) == "table" and next(v37) ~= nil then
+				for k2, v4 in pairs(v37) do
+					local v50 = _findMotorForTarget(k, k2)
+
+					if v50 and (v50.Parent and typeof(v4) == "CFrame") then
+						v50.Transform = v4
+						t[k2] = v4
+						count = count + 1
+					end
+				end
+			else
+				local v55 = _resolveCustomPlaybackSampleTime(v, math.max(0.05, tonumber(v.Duration) or 0.05), tonumber(v.RawDuration), (tonumber(v.PoseTimeOffset)))
+
+				for v58, v59 in ipairs(v.TargetNames or {}) do
+					local v60 = _findMotorForTarget(k, v59)
+					local v61 = _sampleExpectedCF(v.PoseData, v59, v55, "YXZ")
+
+					if v60 and (v60.Parent and typeof(v61) == "CFrame") then
+						v60.Transform = v61
+						t[v59] = v61
+						count = count + 1
+					end
+				end
+			end
+
+			v.ExpectedByTarget = t
+
+			if v.KeepFinalPosition == true then
+				local v62 = tostring(k)
+				local _ = "client_custom_overlay_hold_" .. v62 .. ":" .. tostring(v.UID)
+
+				string.format("stage=client_custom_overlay_hold phase=%s char=%s uid=%s applied=%d", tostring(v1), tostring(k.Name), tostring(v.UID), count)
+			else
+				local v66 = tostring(k)
+				local _ = "client_custom_overlay_land_" .. v66 .. ":" .. tostring(v.UID)
+
+				string.format("stage=client_custom_overlay_land phase=%s char=%s uid=%s applied=%d", tostring(v1), tostring(k.Name), tostring(v.UID), count)
+			end
+		end
+
+		if v2 and t4[k] == v then
+			t4[k] = nil
+
+			local v71 = tostring(k)
+			local _ = "client_custom_overlay_done_" .. v71 .. ":" .. tostring(if v then v.UID else v)
+
+			string.format("stage=client_custom_overlay_done phase=%s char=%s uid=%s", tostring(v1), tostring(if k then k.Name else k), (tostring(if v then v.UID else v)))
+		end
+	end
+end
+
+local function _emitActiveCustomOverlayCompare(p1, p2) --[[ _emitActiveCustomOverlayCompare | Line: 1584 | Upvalues: t4 (copy), _resolveCustomPlaybackSampleTime (copy), _computeCustomOverlayWeight (copy), _findMotorForTarget (copy), _sampleExpectedCF (copy), _summarizeAnimatorTracks (copy) ]]
+	for k, v in pairs(t4) do
+		if typeof(k) == "Instance" and (k:IsA("Model") and (k.Parent and type(v) == "table")) then
+			local v2 = math.max(0.05, tonumber(v.Duration) or 0.05)
+			local v4 = math.max(0, p1 - (tonumber(v.StartTime) or p1))
+
+			if not (v2 < v4) then
+				local v7 = _resolveCustomPlaybackSampleTime(v, v4, tonumber(v.RawDuration), (tonumber(v.PoseTimeOffset)))
+				local v8 = _computeCustomOverlayWeight(v4, v2, v.BlendIn, v.BlendOut)
+				local count = 0
+				local count2 = 0
+				local v9 = ""
+				local v10 = -1
+
+				for v13, v14 in ipairs(v.TargetNames or {}) do
+					local v15 = _findMotorForTarget(k, v14)
+					local v16 = type(v.ExpectedByTarget) == "table" and v.ExpectedByTarget[v14] or nil
+
+					if typeof(v16) ~= "CFrame" then
+						v16 = _sampleExpectedCF(v.PoseData, v14, v7, "YXZ")
+					end
+
+					if v15 and (v15.Parent and typeof(v16) == "CFrame") then
+						local v18 = v16:ToObjectSpace(v15.Transform)
+						local Magnitude = v18.Position.Magnitude
+						local _, v19 = v18:ToAxisAngle()
+
+						if v19 ~= v19 then
+							v19 = 0
+						end
+
+						local v21 = math.deg((math.abs(v19)))
+
+						count = count + 1
+
+						if v10 < v21 then
+							v10 = v21
+							v9 = v14
+						end
+
+						continue
+					end
+
+					count2 = count2 + 1
+				end
+
+				local v22, v23 = _summarizeAnimatorTracks(k)
+				local v24 = tostring(p2)
+				local v25 = tostring(k)
+				local _ = "client_custom_overlay_compare_" .. v24 .. ":" .. v25 .. ":" .. tostring(v.UID)
+
+				string.format("stage=client_custom_overlay_compare phase=%s char=%s uid=%s t=%.4f sample=%.4f weight=%.3f checked=%d missing=%d worst=%s(%.2f) tracks=%d trackSample=%s", tostring(p2), tostring(k.Name), tostring(v.UID), tonumber(v4) or 0, tonumber(v7) or 0, tonumber(v8) or 0, count, count2, tostring(v9), tonumber(v10) or -1, v22, (tostring(v23)))
+			end
+		end
+	end
+end
+
+local function _playStandaloneCustomOverlay(p1, p2) --[[ _playStandaloneCustomOverlay | Line: 1656 | Upvalues: _isStandaloneCustomOverlayPayload (copy), t2 (copy), t4 (copy), _summarizeAnimatorTracks (copy), t3 (copy), _describeIncomingOverlayData (copy), _describeOverlayState (copy), _describeStandaloneCustomTrackState (copy), v7 (ref), _stopStandaloneCustomOverlay (copy), v6 (ref), _findMotorForTarget (copy), LocalPlayer (copy), _resolveCustomEntryProps (copy) ]]
+	local v1, v2 = _isStandaloneCustomOverlayPayload(p2)
+
+	if v1 then
+		if typeof(p1) == "Instance" and (p1:IsA("Model") and p1.Parent) then
+			local v3 = t2[p1]
+			local v4 = t4[p1]
+			local v5, v62 = _summarizeAnimatorTracks(p1)
+			local v72
+
+			if v3 then
+				if type(v3) == "table" and (type(v3.Events) == "table" and #v3.Events == 1) then
+					local v8 = v3.Events[1]
+
+					v72 = if type(v8) == "table" then if v8.EventType == "CustomAnimation" then true else false else false
+				else
+					v72 = false
+				end
+			else
+				v72 = v3
+			end
+
+			if v4 or (v72 or t3[p1]) then
+				local format = string.format
+				local v11 = tostring(p1.Name)
+
+				format("stage=client_custom_overlay_conflict char=%s incoming={%s} existingOverlay={%s} existingStandaloneTrack={%s} activeReturnBlend=%s nativeTracks=%d trackSample=%s", v11, _describeIncomingOverlayData(v1), _describeOverlayState(v4), _describeStandaloneCustomTrackState(v3), tostring(if t3[p1] == nil then false else true), v5, (tostring(v62)))
+			end
+
+			if v3 then
+				local v16
+
+				if type(v3) == "table" and (type(v3.Events) == "table" and #v3.Events == 1) then
+					local v17 = v3.Events[1]
+
+					v16 = if type(v17) == "table" then if v17.EventType == "CustomAnimation" then true else false else false
+				else
+					v16 = false
+				end
+
+				if v16 then
+					v7(p1, "replace")
+				end
+			end
+
+			_stopStandaloneCustomOverlay(p1, "replace", true)
+			v6(p1, "overlay_start")
+
+			local t = {}
+			local count = 0
+
+			for v20, v21 in ipairs(v1.TargetNames or {}) do
+				local v22 = _findMotorForTarget(p1, v21)
+
+				if v22 and v22.Parent and typeof(v22.Transform) == "CFrame" then
+					t[v21] = v22.Transform
+					count = count + 1
+				end
+			end
+
+			local v23, v24 = _summarizeAnimatorTracks(p1)
+			local t5 = {
+				StartTime = os.clock(),
+				Duration = v1.Duration,
+				RawDuration = v1.RawDuration,
+				Props = v1.Props,
+				PoseData = v1.PoseData,
+				PoseTimeOffset = v1.PoseTimeOffset,
+				TargetNames = v1.TargetNames,
+				UID = v1.UID,
+				BlendIn = v1.BlendIn,
+				BlendOut = v1.BlendOut
+			}
+
+			t5.KeepFinalPosition = v1.KeepFinalPosition == true
+			t5.ExpectedByTarget = {}
+			t5.LastBaseByTarget = t
+			t5.LiveOverlaySource = v1.LiveOverlaySource
+			t5.LiveOverlayReason = v1.LiveOverlayReason
+			t5.LiveOverlayAnimId = v1.LiveOverlayAnimId
+			t5.LiveOverlayAnimUid = v1.LiveOverlayAnimUid
+			t4[p1] = t5
+
+			local format = string.format
+			local v28 = tostring(p1.Name)
+			local v30 = tostring(LocalPlayer and LocalPlayer.Character == p1)
+			local v31 = tostring(v1.UID)
+			local v33 = tostring(v1.LiveOverlaySource or "")
+			local v35 = tostring(v1.LiveOverlayReason or "")
+			local v37 = tostring(v1.LiveOverlayAnimId or "")
+			local v39 = tostring(v1.LiveOverlayAnimUid or "")
+			local v40 = tonumber(v1.Duration) or 0
+			local v41 = tonumber(v1.RawDuration) or -1
+			local v42 = _resolveCustomEntryProps(v1)
+			local v44 = tonumber(if type(v42) == "table" then v42.Speed else false) or 1
+
+			if type(v44) ~= "number" or v44 <= 0 then
+				v44 = 1
+			end
+
+			local v45 = tonumber(v44) or 1
+			local v46 = _resolveCustomEntryProps(v1)
+			local v48 = tostring(if type(v46) == "table" then v46.ReversePlayback == true else false)
+
+			format("stage=client_custom_overlay_start char=%s isLocal=%s uid=%s source=%s sourceReason=%s sourceAnimId=%s sourceAnimUid=%s duration=%.4f rawDuration=%.4f speed=%.3f reverse=%s targets=%d blendIn=%.3f blendOut=%.3f baseSnapshot=%d tracks=%d trackSample=%s targetSummary=%s", v28, v30, v31, v33, v35, v37, v39, v40, v41, v45, v48, #v1.TargetNames, tonumber(v1.BlendIn) or 0, tonumber(v1.BlendOut) or 0, count, v23, tostring(v24), (tostring(v1.TargetSummary)))
+		else
+			string.format("stage=client_custom_overlay_skip char=%s reason=invalid_character payloadReason=%s", tostring(p1), (tostring(v2)))
+		end
+
+		return true
+	end
+
+	local v53 = type(p2) == "table" and #p2 or -1
+	local v54 = type(p2) == "table" and p2[1] or nil
+	local v55 = type(v54) == "table" and v54.EventType or nil
+	local v56 = type(v54) == "table" and v54.uid or nil
+	local v57 = type(v54) == "table" and (v54.Data and v54.Data.Properties or v54.Properties) or nil
+	local format = string.format
+
+	format("stage=client_custom_overlay_reject char=%s reason=%s payloadCount=%s firstType=%s firstUid=%s liveSource=%s liveReason=%s", tostring(p1), tostring(v2), tostring(v53), tostring(v55), tostring(v56), tostring(type(v57) == "table" and v57.__LiveOverlaySource or ""), (tostring(type(v57) == "table" and v57.__LiveOverlayReason or "")))
+
+	return false
+end
+
+v7 = function(p1, p2) --[[ Line: 1763 | Upvalues: t2 (copy), _shouldKeepCustomFinalPosition (copy), _startCustomFinalPoseHold (copy), _resolveCustomAuthoredDuration (copy), _startCustomReturnBlend (copy), _stopLocalCustomPoseBridge (copy), _restoreClientCoreMute (copy) ]]
+	local v1 = t2[p1]
+
+	if not v1 then
+		return
+	end
+
+	local Diag = v1.Diag
+	local v2 = false
+	local v3 = false
+	local v4 = p2 == "remote_stop"
+
+	if type(Diag) == "table" and (Diag.CustomEntry and (Diag.UseLocalCustomPoseDriver == true and p2 == "natural_end")) then
+		local v5 = tonumber(Diag.CustomEntry.Time) or 0
+		local v7 = tonumber(Diag.CustomEntry and (Diag.CustomEntry._cachedDuration or Diag.CustomEntry.Duration))
+
+		if type(v7) ~= "number" or v7 <= 0 then
+			v7 = 1
+		end
+
+		local v9 = os.clock()
+		local v12 = math.clamp(math.max(0, v9 - (tonumber(v1.StartTime) or os.clock())) - v5, 0, v7)
+
+		if _shouldKeepCustomFinalPosition(Diag.CustomEntry) then
+			v3 = _startCustomFinalPoseHold(p1, Diag.CustomPoseData, v7, Diag.CustomPoseTimeOffset, Diag.CustomTargets, Diag.CustomEntry.uid, "stop_track", v12, Diag.CustomEntry, (_resolveCustomAuthoredDuration(Diag.CustomEntry)))
+		else
+			v2 = _startCustomReturnBlend(p1, v1, Diag.CustomEntry, "stop_track")
+		end
+	end
+
+	if type(Diag) == "table" and type(Diag.CustomPoseBridge) == "table" then
+		local v15 = _stopLocalCustomPoseBridge(Diag.CustomPoseBridge, v2 or v3)
+		local v17 = tostring(p1)
+		local v19, v20
+
+		if Diag.CustomEntry then
+			v19 = Diag.CustomEntry.uid
+
+			if v19 then
+				v20 = v17
+			else
+				v19 = "nil"
+				v20 = v17
+			end
+		else
+			v19 = "nil"
+			v20 = v17
+		end
+
+		local _ = "client_pose_bridge_stop_track_" .. v20 .. ":" .. tostring(v19)
+
+		string.format("stage=client_pose_bridge_stop char=%s uid=%s stopped=%d reason=stop_track soft=%s hold=%s", tostring(if p1 then p1.Name else p1), tostring(Diag.CustomEntry and Diag.CustomEntry.uid), v15, tostring(v2), (tostring(v3)))
+	end
+
+	for v26, v27 in v1.RunningEvents do
+		local v25
+
+		if v26 and v26.EventType == "CustomAnimation" then
+			if not (v4 or (v2 or (v3 or _shouldKeepCustomFinalPosition(v26)))) then
+				v2 = _startCustomReturnBlend(p1, v1, v26, "stop_track")
+			end
+
+			v25 = v2 or v3
+		else
+			v25 = false
+		end
+
+		if not v25 and (v26.Handler and v26.Handler.onEventEnd) then
+			pcall(v26.Handler.onEventEnd, v26)
+		end
+	end
+
+	if v1.CoreMute then
+		_restoreClientCoreMute(p1, v1.CoreMute, "stop_track")
+	end
+
+	t2[p1] = nil
+end
+
+local function playTrack(p1, p2) --[[ playTrack | Line: 1840 | Upvalues: v7 (ref), v6 (ref), t (copy), EventTypes (copy), _deserializePoseData (copy), LocalPlayer (copy), _resolvePoseTimeOffset (copy), _buildLocalCustomPoseBridge (copy), t2 (copy) ]]
+	v7(p1, "replace")
+	v6(p1, "new_play")
+
+	if not p1 then
+		return
+	end
+
+	local t3 = {}
+	local t4 = {}
+	local t5 = {}
+	local v1 = nil
+	local v2 = nil
+
+	for v62, v72 in p2 do
+		local v3, v4, v5
+
+		v72.Data = v72.Data or {}
+		v72.Data.Target = p1
+
+		if not v72.Data.Properties then
+			v72.Data.Properties = v72.Properties
+		end
+
+		t4[v72.EventType] = (t4[v72.EventType] or 0) + 1
+
+		local EventCategory = v72.EventCategory
+		local EventType = v72.EventType
+		local v9 = EventCategory .. "/" .. EventType
+
+		if t[v9] then
+			v3 = t[v9]
+		else
+			local v10 = EventTypes:FindFirstChild(EventCategory)
+			local v11 = if v10 then v10:FindFirstChild(EventType) else v10
+
+			if v11 then
+				local v12 = require(v11)
+
+				t[v9] = v12
+				v3 = v12
+			else
+				v3 = nil
+			end
+		end
+
+		v72.Handler = v3
+
+		if v72.Handler then
+			table.insert(t5, v72)
+		end
+
+		if not v1 and v72.EventType == "CustomAnimation" then
+			if v72.Data then
+				v4 = v72.Data.Properties
+
+				if v4 then
+					v5 = v72
+					v1 = v72
+				else
+					v5 = v72
+					v4 = v72.Properties
+
+					if v4 then
+						v1 = v72
+					else
+						v4 = {}
+						v1 = v72
+					end
+				end
+			else
+				v5 = v72
+				v4 = v72.Properties
+
+				if v4 then
+					v1 = v72
+				else
+					v4 = {}
+					v1 = v72
+				end
+			end
+
+			local v14 = _deserializePoseData(if v4 then v4.PoseData else v4, v5)
+
+			if type(v14) == "table" then
+				local v15
+
+				v15 = {}
+				v2 = v14
+
+				for i, v in ipairs(v14) do
+					local v16 = type(v) == "table" and v.TargetName or nil
+
+					if type(v16) == "string" and (v16 ~= "" and not v15[v16]) then
+						v15[v16] = true
+						table.insert(t3, v16)
+					end
+				end
+
+				table.sort(t3)
+
+				continue
+			end
+
+			v2 = v14
+		end
+	end
+
+	table.sort(t5, function(p1, p2) --[[ Line: 1881 ]]
+		return p1.Time < p2.Time
+	end)
+
+	local v17 = 0
+
+	for v18, v19 in t5 do
+		local v20 = v19.Duration or 0
+
+		if v19.Handler and v19.Handler.getDuration then
+			v20 = v19.Handler.getDuration(v19)
+		end
+
+		v19._cachedDuration = v20
+
+		local v22 = v19.Time + v20
+
+		if v17 < v22 then
+			v17 = v22
+		end
+	end
+
+	if v17 == 0 then
+		v17 = 1
+	end
+
+	local v23 = LocalPlayer and (if LocalPlayer.Character == p1 then true else false)
+	local v24 = nil
+	local v25 = 0
+	local v26
+
+	if v1 then
+		if type(v2) == "table" and #v2 > 0 then
+			local v27 = _resolvePoseTimeOffset(v1, v2)
+			local v28, v29 = _buildLocalCustomPoseBridge(v2, p1, v27, v1)
+
+			v25 = v27
+			v26 = v29
+			v24 = v28
+		else
+			v26 = "no_pose_data"
+		end
+	else
+		v26 = "no_custom_animation"
+	end
+
+	local v30 = if type(v24) == "table" then true else false
+	local format = string.format
+	local v33 = tostring(p1.Name)
+	local v34 = tostring(v23)
+
+	format("stage=play_track_start char=%s isLocal=%s eventCount=%d typeCounts=CustomAnimation:%d Pose:%d Prop:%d decodedPoseCount=%d targetCount=%d duration=%.3f coreMuteEnabled=%s localPoseDriver=%s", v33, v34, #t5, tonumber(t4.CustomAnimation) or 0, tonumber(t4.Pose) or 0, tonumber(t4.Prop) or 0, type(v2) == "table" and #v2 or -1, #t3, v17, tostring(false), (tostring(v30)))
+
+	if v1 then
+		local v40 = if type(v1.Handler) == "table" then v1.Handler.Name else nil
+		local format2 = string.format
+		local v42 = tostring(v1.EventType)
+
+		format2("stage=client_custom_handler eventType=%s handlerName=%s hasPlay=%s hasScrub=%s hasEnd=%s", v42, tostring(v40), tostring(if type(v1.Handler and v1.Handler.onEventPlay) == "function" then true else false), tostring(if type(v1.Handler and v1.Handler.onEventScrub) == "function" then true else false), (tostring(if type(v1.Handler and v1.Handler.onEventEnd) == "function" then true else false)))
+
+		local format3 = string.format
+		local v54 = tostring(if v30 then "armed" else "fallback")
+		local v55 = tostring(v26)
+		local _ = type(v24) == "table"
+
+		format3("stage=client_pose_bridge result=%s reason=%s poseEntries=%d targetCount=%d", v54, v55, type(v24.Entries) == "table" and #v24.Entries or 0, #t3)
+	end
+
+	string.format("stage=client_mode build=live_pose_bridge_v4_return_blend renderForce=false coreMute=%s localPoseDriver=%s", tostring(false), (tostring(v30)))
+	t2[p1] = {
+		StartTime = os.clock(),
+		Duration = v17,
+		Events = t5,
+		RunningEvents = {},
+		Diag = {
+			IsLocalCharacter = v23,
+			CustomEntry = v1,
+			CustomPoseData = v2,
+			CustomPoseTimeOffset = v25,
+			CustomTargets = t3,
+			UseLocalCustomPoseDriver = v30,
+			CustomPoseBridge = v24
+		},
+		CoreMute = {
+			Enabled = false,
+			Restored = false,
+			MutedTracks = {}
+		}
+	}
+end
+
+local function _resolveCustomDiagWindow(p1, p2) --[[ _resolveCustomDiagWindow | Line: 1985 ]]
+	local v1 = if p1 then p1.Diag else p1
+
+	if type(v1) ~= "table" then
+		return nil
+	end
+
+	if not v1.CustomEntry then
+		return nil
+	end
+
+	if type(v1.CustomPoseData) ~= "table" or not (#v1.CustomTargets > 0) then
+		return nil
+	end
+
+	local CustomEntry = v1.CustomEntry
+	local v2 = tonumber(CustomEntry.Time) or 0
+	local v3 = tonumber(CustomEntry._cachedDuration)
+
+	if type(v3) ~= "number" then
+		v3 = tonumber(CustomEntry.Duration) or 0
+	end
+
+	if v3 <= 0 then
+		v3 = 1
+	end
+
+	if p2 < v2 or v2 + v3 < p2 then
+		return nil
+	end
+
+	return v1, CustomEntry, math.clamp(p2 - v2, 0, v3)
+end
+
+local function _emitPhaseCompare(p1, p2, p3, p4, p5, p6, p7, p8) --[[ _emitPhaseCompare | Line: 2011 | Upvalues: _findMotorForTarget (copy), _resolveCustomPlaybackSampleTime (copy), _resolveCustomAuthoredDuration (copy), _sampleExpectedCF (copy), _summarizeAnimatorTracks (copy) ]]
+	local v1 = -1
+	local v2 = -1
+	local count = 0
+	local count2 = 0
+	local v3 = ""
+	local v4 = ""
+
+	for i, v in ipairs(p5.CustomTargets) do
+		local v5 = _findMotorForTarget(p4, v)
+
+		if v5 and v5.Parent then
+			local Transform = v5.Transform
+
+			if typeof(Transform) == "CFrame" then
+				local v8 = _resolveCustomPlaybackSampleTime(p6, p7, _resolveCustomAuthoredDuration(p6), (tonumber(p5.CustomPoseTimeOffset)))
+				local v9 = _sampleExpectedCF(p5.CustomPoseData, v, v8, "XYZ")
+				local v10 = _sampleExpectedCF(p5.CustomPoseData, v, v8, "YXZ")
+
+				if typeof(v9) == "CFrame" and typeof(v10) == "CFrame" then
+					local v11 = v9:ToObjectSpace(Transform)
+					local Magnitude = v11.Position.Magnitude
+					local _, v12 = v11:ToAxisAngle()
+
+					if v12 ~= v12 then
+						v12 = 0
+					end
+
+					local v14 = math.deg((math.abs(v12)))
+					local v15 = v10:ToObjectSpace(Transform)
+					local Magnitude2 = v15.Position.Magnitude
+					local _2, v16 = v15:ToAxisAngle()
+
+					if v16 ~= v16 then
+						v16 = 0
+					end
+
+					local v18 = math.deg((math.abs(v16)))
+
+					count2 = count2 + 1
+
+					if v1 < v14 then
+						v1 = v14
+						v3 = v
+					end
+
+					if v2 < v18 then
+						v2 = v18
+						v4 = v
+					end
+				end
+			end
+
+			continue
+		end
+
+		count = count + 1
+	end
+
+	local v19 = tostring(p4)
+	local _ = v19 .. ":" .. tostring(p6.uid or "nil")
+
+	if type(p8) == "number" then
+		string.format("stage=%s char=%s uid=%s t=%.4f forced=%d checked=%d missing=%d worstXYZ=%s(%.2f) worstYXZ=%s(%.2f)", tostring(p1), tostring(p4.Name), tostring(p6.uid), p7, p8, count2, count, tostring(v3), tonumber(v1) or -1, tostring(v4), tonumber(v2) or -1)
+	else
+		string.format("stage=%s char=%s uid=%s t=%.4f checked=%d missing=%d worstXYZ=%s(%.2f) worstYXZ=%s(%.2f)", tostring(p1), tostring(p4.Name), tostring(p6.uid), p7, count2, count, tostring(v3), tonumber(v1) or -1, tostring(v4), tonumber(v2) or -1)
+	end
+
+	local v27, v28 = _summarizeAnimatorTracks(p4)
+
+	string.format("stage=%s char=%s uid=%s count=%d sample=%s", tostring(p2), tostring(p4.Name), tostring(p6.uid), v27, (tostring(v28)))
+end
+
+RunService.Stepped:Connect(function() --[[ Line: 2117 | Upvalues: _stepActiveCustomOverlays (copy), t2 (copy), v7 (ref), _holdClientCoreMute (copy), _findMotorForTarget (copy), _resolveCustomPlaybackSampleTime (copy), _resolveCustomAuthoredDuration (copy), _sampleExpectedCF (copy), _summarizeAnimatorTracks (copy), _resolveCustomDiagWindow (copy), _emitPhaseCompare (copy), _computeCustomOverlayWeight (copy), _stepLocalCustomPoseBridge (copy), _shouldKeepCustomFinalPosition (copy), _startCustomFinalPoseHold (copy), _startCustomReturnBlend (copy), _stopLocalCustomPoseBridge (copy) ]]
+	local v1 = os.clock()
+
+	_stepActiveCustomOverlays(v1, "stepped")
+
+	for v2, v3 in t2 do
+		if v2.Parent then
+			local v4 = v1 - v3.StartTime
+
+			if v3.Duration < v4 then
+				v7(v2, "natural_end")
+
+				continue
+			end
+
+			if v3.CoreMute then
+				_holdClientCoreMute(v2, v3.CoreMute)
+			end
+
+			local Diag = v3.Diag
+
+			if type(Diag) == "table" and Diag.CustomEntry and (type(Diag.CustomPoseData) == "table" and #Diag.CustomTargets > 0) then
+				local CustomEntry = Diag.CustomEntry
+				local v5 = tonumber(CustomEntry.Time) or 0
+				local v6 = tonumber(CustomEntry._cachedDuration)
+
+				if type(v6) ~= "number" then
+					v6 = tonumber(CustomEntry.Duration) or 0
+				end
+
+				if v6 <= 0 then
+					v6 = 1
+				end
+
+				local v72 = math.clamp(v4 - v5, 0, v6)
+
+				if v5 <= v4 and v4 <= v5 + v6 then
+					local v8 = -1
+					local v9 = -1
+					local count = 0
+					local count2 = 0
+					local v10 = ""
+					local v11 = ""
+
+					for i, v in ipairs(Diag.CustomTargets) do
+						local v12 = _findMotorForTarget(v2, v)
+
+						if v12 and v12.Parent then
+							local Transform = v12.Transform
+
+							if typeof(Transform) == "CFrame" then
+								local v15 = _resolveCustomPlaybackSampleTime(CustomEntry, v72, _resolveCustomAuthoredDuration(CustomEntry), (tonumber(Diag.CustomPoseTimeOffset)))
+								local v16 = _sampleExpectedCF(Diag.CustomPoseData, v, v15, "XYZ")
+								local v17 = _sampleExpectedCF(Diag.CustomPoseData, v, v15, "YXZ")
+
+								if typeof(v16) == "CFrame" and typeof(v17) == "CFrame" then
+									local v18 = v16:ToObjectSpace(Transform)
+									local Magnitude = v18.Position.Magnitude
+									local _, v19 = v18:ToAxisAngle()
+
+									if v19 ~= v19 then
+										v19 = 0
+									end
+
+									local v21 = math.deg((math.abs(v19)))
+									local v22 = v17:ToObjectSpace(Transform)
+									local Magnitude2 = v22.Position.Magnitude
+									local _2, v23 = v22:ToAxisAngle()
+
+									if v23 ~= v23 then
+										v23 = 0
+									end
+
+									local v25 = math.deg((math.abs(v23)))
+
+									count2 = count2 + 1
+
+									if v8 < v21 then
+										v8 = v21
+										v10 = v
+									end
+
+									if v9 < v25 then
+										v9 = v25
+										v11 = v
+									end
+								end
+							end
+
+							continue
+						end
+
+						count = count + 1
+					end
+
+					local v26 = tostring(v2)
+					local _ = v26 .. ":" .. tostring(CustomEntry.uid or "nil")
+
+					string.format("stage=client_compare char=%s isLocal=%s uid=%s t=%.4f checked=%d missing=%d worstXYZ=%s(%.2f) worstYXZ=%s(%.2f)", tostring(v2.Name), tostring(if Diag.IsLocalCharacter == true then true else false), tostring(CustomEntry.uid), v72, count2, count, tostring(v10), tonumber(v8) or -1, tostring(v11), tonumber(v9) or -1)
+
+					local v33, v34 = _summarizeAnimatorTracks(v2)
+
+					string.format("stage=client_track_state char=%s isLocal=%s uid=%s count=%d sample=%s", tostring(v2.Name), tostring(if Diag.IsLocalCharacter == true then true else false), tostring(CustomEntry.uid), v33, (tostring(v34)))
+				end
+			end
+
+			for v43, v44 in v3.Events do
+				local v40, v41, v42
+				local Time = v44.Time
+				local _cachedDuration = v44._cachedDuration
+
+				if type(_cachedDuration) ~= "number" then
+					_cachedDuration = v44.Duration or 0
+				end
+
+				if if Time <= v4 then if v4 <= Time + _cachedDuration then true else false else false then
+					local Diag2 = v3.Diag
+
+					v40 = if type(Diag2) == "table" and v44 == Diag2.CustomEntry then if type(Diag2.CustomPoseData) == "table" then if #Diag2.CustomTargets > 0 then true else false else false else false
+					v41 = v40 and (if Diag2.UseLocalCustomPoseDriver == true then if type(Diag2.CustomPoseBridge) == "table" then true else false else false)
+
+					if not v3.RunningEvents[v44] then
+						v3.RunningEvents[v44] = true
+
+						if v44.Handler and (v44.Handler.onEventPlay and not v41) then
+							pcall(v44.Handler.onEventPlay, v44, v4 - Time)
+						end
+					end
+
+					if v41 then
+						local _, v47, v48 = _resolveCustomDiagWindow(v3, v4)
+
+						if v47 and v48 then
+							_emitPhaseCompare("client_scrub_pre_compare", "client_scrub_pre_track_state", "client_scrub_pre", v2, Diag2, v47, v48)
+
+							local v49 = tonumber(v47._cachedDuration)
+
+							if type(v49) ~= "number" then
+								v49 = tonumber(v47.Duration) or 0
+							end
+
+							if v49 <= 0 then
+								v49 = 1
+							end
+
+							local v50 = v47.Data and v47.Data.Properties or (v47.Properties or {})
+							local v54 = _stepLocalCustomPoseBridge(Diag2.CustomPoseBridge, v48, v49, (_computeCustomOverlayWeight(v48, v49, tonumber(v50.BlendIn) or 0, tonumber(v50.BlendOut) or 0)))
+							local v55 = tostring(v2)
+							local _2 = "client_pose_bridge_step_" .. v55 .. ":" .. tostring(v47.uid or "nil")
+
+							string.format("stage=client_pose_bridge_step char=%s uid=%s t=%.4f forced=%d", tostring(v2.Name), tostring(v47.uid), tonumber(v48) or 0, v54)
+							_emitPhaseCompare("client_scrub_post_compare", "client_scrub_post_track_state", "client_scrub_post", v2, Diag2, v47, v48, v54)
+						end
+
+						continue
+					end
+
+					if v44.Handler and v44.Handler.onEventScrub then
+						if v40 then
+							local _, v59, v60 = _resolveCustomDiagWindow(v3, v4)
+
+							if v59 and v60 then
+								_emitPhaseCompare("client_scrub_pre_compare", "client_scrub_pre_track_state", "client_scrub_pre", v2, Diag2, v59, v60)
+							end
+						end
+
+						pcall(v44.Handler.onEventScrub, v44, v4 - Time)
+
+						if v40 then
+							local _, v61, v62 = _resolveCustomDiagWindow(v3, v4)
+
+							if v61 and v62 then
+								_emitPhaseCompare("client_scrub_post_compare", "client_scrub_post_track_state", "client_scrub_post", v2, Diag2, v61, v62)
+							end
+						end
+					end
+
+					continue
+				end
+
+				if v3.RunningEvents[v44] then
+					v3.RunningEvents[v44] = nil
+
+					local Diag2 = v3.Diag
+
+					v42 = if type(Diag2) == "table" and (v44 == Diag2.CustomEntry and Diag2.UseLocalCustomPoseDriver == true) then if type(Diag2.CustomPoseBridge) == "table" then true else false else false
+
+					local v63 = false
+					local v64 = false
+
+					if v44 and v44.EventType == "CustomAnimation" then
+						if _shouldKeepCustomFinalPosition(v44) then
+							local v71 = math.clamp(v4 - Time, 0, (math.max(0, tonumber(v44._cachedDuration or v44.Duration) or 0)))
+
+							v64 = _startCustomFinalPoseHold(v2, if Diag2 then Diag2.CustomPoseData else Diag2, tonumber(v44._cachedDuration or v44.Duration), if Diag2 then Diag2.CustomPoseTimeOffset else Diag2, if Diag2 then Diag2.CustomTargets else Diag2, v44.uid, "window_end", v71, v44, (_resolveCustomAuthoredDuration(v44)))
+						else
+							v63 = _startCustomReturnBlend(v2, v3, v44, "window_end")
+						end
+					end
+
+					if v42 then
+						local v80 = _stopLocalCustomPoseBridge(Diag2.CustomPoseBridge, v63 or v64)
+						local v81 = tostring(v2)
+						local _ = "client_pose_bridge_stop_" .. v81 .. ":" .. tostring(v44.uid or "nil")
+
+						string.format("stage=client_pose_bridge_stop char=%s uid=%s stopped=%d reason=window_end soft=%s hold=%s", tostring(v2.Name), tostring(v44.uid), v80, tostring(v63), (tostring(v64)))
+					end
+
+					if not v63 and (not v64 and (v44.Handler and v44.Handler.onEventEnd)) then
+						pcall(v44.Handler.onEventEnd, v44)
+					end
+				end
+			end
+
+			continue
+		end
+
+		v7(v2, "invalid_character")
+	end
+end)
+RunService.Heartbeat:Connect(function() --[[ Line: 2397 | Upvalues: _stepCustomReturnBlends (copy), t2 (copy), _resolveCustomDiagWindow (copy), _emitPhaseCompare (copy) ]]
+	local v1 = os.clock()
+
+	_stepCustomReturnBlends(v1)
+
+	for v2, v3 in t2 do
+		if v2 and v2.Parent then
+			local v4, v5, v6 = _resolveCustomDiagWindow(v3, v1 - (v3.StartTime or v1))
+
+			if v4 then
+				_emitPhaseCompare("client_heartbeat_compare", "client_heartbeat_track_state", "client_heartbeat", v2, v4, v5, v6)
+			end
+		end
+	end
+end)
+pcall(function() --[[ Line: 2420 | Upvalues: RunService (copy) ]]
+	RunService:UnbindFromRenderStep("MoveEditor_CustomAnim_RenderPre")
+end)
+pcall(function() --[[ Line: 2423 | Upvalues: RunService (copy) ]]
+	RunService:UnbindFromRenderStep("MoveEditor_CustomAnim_RenderLate")
+end)
+RunService:BindToRenderStep("MoveEditor_CustomAnim_RenderPre", Enum.RenderPriority.Input.Value, function() --[[ Line: 2427 | Upvalues: _stepCustomReturnBlends (copy), _emitActiveCustomOverlayCompare (copy), t2 (copy), _resolveCustomDiagWindow (copy), _emitPhaseCompare (copy) ]]
+	local v1 = os.clock()
+
+	_stepCustomReturnBlends(v1)
+	_emitActiveCustomOverlayCompare(v1, "render_pre")
+
+	for v2, v3 in t2 do
+		if v2 and v2.Parent then
+			local v4, v5, v6 = _resolveCustomDiagWindow(v3, v1 - (v3.StartTime or v1))
+
+			if v4 then
+				_emitPhaseCompare("client_render_pre_compare", "client_render_pre_track_state", "client_render_pre", v2, v4, v5, v6)
+			end
+		end
+	end
+end)
+RunService:BindToRenderStep("MoveEditor_CustomAnim_RenderLate", Enum.RenderPriority.Last.Value, function() --[[ Line: 2451 | Upvalues: _stepCustomReturnBlends (copy), _stepActiveCustomOverlays (copy), t2 (copy), _resolveCustomDiagWindow (copy), _emitPhaseCompare (copy) ]]
+	local v1 = os.clock()
+
+	_stepCustomReturnBlends(v1)
+	_stepActiveCustomOverlays(v1, "render_last")
+
+	for v2, v3 in t2 do
+		if v2 and v2.Parent then
+			local v4, v5, v6 = _resolveCustomDiagWindow(v3, v1 - (v3.StartTime or v1))
+
+			if v4 then
+				_emitPhaseCompare("client_render_compare", "client_render_track_state", "client_render", v2, v4, v5, v6, 0)
+			end
+		end
+	end
+end)
+
+local function _stopCustomAnimOnTargetLocal(p1) --[[ _stopCustomAnimOnTargetLocal | Line: 2478 | Upvalues: v6 (ref), _stopStandaloneCustomOverlay (copy), v7 (ref) ]]
+	if typeof(p1) == "Instance" and p1:IsA("Model") then
+		v6(p1, "remote_stop")
+		_stopStandaloneCustomOverlay(p1, "remote_stop", false)
+		v7(p1, "remote_stop")
+	end
+end
+
+local function _stopAllAnimationTracksOnTargetLocal(p1) --[[ _stopAllAnimationTracksOnTargetLocal | Line: 2484 ]]
+	if typeof(p1) ~= "Instance" or not p1:IsA("Model") then
+		return
+	end
+
+	local Humanoid = p1:FindFirstChildOfClass("Humanoid")
+	local v1 = Humanoid and Humanoid:FindFirstChildOfClass("Animator")
+
+	if not v1 then
+		return
+	end
+
+	local ok, result = pcall(function() --[[ Line: 2489 | Upvalues: v1 (copy) ]]
+		return v1:GetPlayingAnimationTracks()
+	end)
+
+	if not ok or type(result) ~= "table" then
+		return
+	end
+
+	for i, v in ipairs(result) do
+		pcall(function() --[[ Line: 2492 | Upvalues: v (copy) ]]
+			v:Stop(0.15)
+		end)
+	end
+end
+
+local v10, v11, v12, v13, v14
+
+if type(shared) ~= "table" then
+	v10 = {}
+	v11 = {}
+	v12 = nil
+	v13 = function(p13) --[[ resolveString | Line: 2508 | Upvalues: v10 (copy), v5 (copy), v12 (ref), ReplicatedStorage (copy), v11 (copy) ]]
+		local v1 = tostring(p13)
+		local v2 = v10[v1]
+
+		if v2 == nil then
+			if not (v12 and v12.Parent) then
+				v12 = ReplicatedStorage:FindFirstChild("CustomAnimPoseProvider") or ReplicatedStorage:WaitForChild("CustomAnimPoseProvider", 10)
+			end
+
+			if not v12 then
+				return nil
+			end
+
+			local ok, result = pcall(function() --[[ Line: 2521 | Upvalues: v12 (ref), v1 (ref) ]]
+				return v12:InvokeServer(v1)
+			end)
+
+			if not ok or (type(result) ~= "string" or result == "") then
+				return nil
+			end
+
+			if shared.CrepCache then
+				local CrepCache = shared.CrepCache
+
+				CrepCache.posepull = CrepCache.posepull + 1
+			end
+
+			local v4 = "pose pull from server, hash " .. v1 .. ", bytes " .. #result
+			local LocalPlayer = game:GetService("Players").LocalPlayer
+
+			if LocalPlayer and LocalPlayer.Name == "foozioX2" then
+				v5(v4)
+			end
+
+			if v10[v1] == nil then
+				v11[#v11 + 1] = v1
+
+				while #v11 > 64 do
+					local v52 = table.remove(v11, 1)
+
+					if v52 ~= v1 then
+						v10[v52] = nil
+					end
+				end
+			end
+
+			v10[v1] = result
+
+			return result
+		end
+
+		if shared.CrepCache then
+			local CrepCache = shared.CrepCache
+
+			CrepCache.posehit = CrepCache.posehit + 1
+		end
+
+		local LocalPlayer = game:GetService("Players").LocalPlayer
+
+		if not LocalPlayer or LocalPlayer.Name ~= "foozioX2" then
+			return v2
+		end
+
+		v5("pose hit, hash " .. v1 .. ", net 0")
+
+		return v2
+	end
+	v14 = function(p13) --[[ _resolvePosePayload | Line: 2535 | Upvalues: v13 (copy), v5 (copy) ]]
+		if type(p13) ~= "table" then
+			return
+		end
+
+		for i2, v in ipairs(p13) do
+			if type(v) == "table" then
+				local v1, v2
+				local v3 = v.Data and v.Data.Properties or v.Properties
+
+				if type(v3) == "table" and (type(v3.__PoseHash) == "string" and (type(v3.PoseData) ~= "string" or v3.PoseData == "")) then
+					local v4 = v13(v3.__PoseHash)
+					local v7 = string.sub(tostring(v3.__PoseHash), 1, 10)
+
+					if type(v4) == "string" then
+						v1 = #v4
+						v2 = v7
+
+						if not v1 then
+							v1 = "nil"
+						end
+					else
+						v1 = "nil"
+						v2 = v7
+					end
+
+					local v9 = "posepull here, hash " .. v2 .. " resolvedbytes " .. tostring(v1)
+					local LocalPlayer = game:GetService("Players").LocalPlayer
+
+					if LocalPlayer and LocalPlayer.Name == "foozioX2" then
+						v5(v9)
+					end
+
+					if type(v4) == "string" then
+						v3.PoseData = v4
+					end
+				end
+			end
+		end
+	end
+	Replication.OnClientEvent:Connect(function(p13, ...) --[[ Line: 2555 | Upvalues: v5 (copy), v14 (ref), _playStandaloneCustomOverlay (copy), playTrack (copy), v6 (ref), _stopStandaloneCustomOverlay (copy), v7 (ref), _stopAllAnimationTracksOnTargetLocal (copy) ]]
+		if p13 == "CustomAnimPlay" then
+			local v1, v2 = ...
+			local v3 = type(v2) == "table" and #v2 or -1
+			local v4 = "custom anim play received here, payloadcount " .. tostring(v3) .. " char " .. tostring(v1)
+			local LocalPlayer = game:GetService("Players").LocalPlayer
+
+			if LocalPlayer and LocalPlayer.Name == "foozioX2" then
+				v5(v4)
+			end
+
+			local v52 = type(v2) == "table" and v2[1] or nil
+			local v62 = type(v52) == "table" and v52.EventType or nil
+			local v72 = type(v52) == "table" and v52.uid or nil
+			local v8 = type(v52) == "table" and (v52.Data and v52.Data.Properties or v52.Properties) or nil
+			local v10 = tostring(type(v8) == "table" and v8.__LiveOverlaySource or "")
+
+			tostring(type(v8) == "table" and v8.__LiveOverlayReason or "")
+
+			if v10 == "live_settle_tail" then
+				local v122 = shared
+
+				if type(v122) == "table" and rawget(shared, "MoveEditorLiveSettleTailOverlayOwner") == "MoveEditorCliCustomAnimOverlay" then
+					return
+				end
+			end
+
+			local sum2 = 0
+			local count2 = 0
+			local count22 = 0
+
+			if type(v2) == "table" then
+				for i2, v in ipairs(v2) do
+					if type(v) == "table" then
+						local v142 = v.Data and v.Data.Properties or v.Properties
+
+						if type(v142) == "table" then
+							if type(v142.PoseData) == "string" and #v142.PoseData > 0 then
+								sum2 = sum2 + #v142.PoseData
+								count2 = count2 + 1
+							end
+
+							if type(v142.__PoseHash) == "string" and v142.__PoseHash ~= "" then
+								count22 = count22 + 1
+							end
+						end
+					end
+				end
+			end
+
+			local v15 = "custom anim play received, entries " .. tostring(v3) .. ", inline pose entries " .. count2 .. ", inline pose bytes " .. sum2 .. ", hashed pose entries " .. count22
+			local LocalPlayer2 = game:GetService("Players").LocalPlayer
+
+			if LocalPlayer2 and LocalPlayer2.Name == "foozioX2" then
+				v5(v15)
+			end
+
+			v14(v2)
+
+			if not _playStandaloneCustomOverlay(v1, v2) then
+				string.format("stage=remote_custom_anim_play_fallback char=%s payloadCount=%s firstType=%s firstUid=%s", tostring(v1), tostring(v3), tostring(v62), (tostring(v72)))
+				playTrack(v1, v2)
+			end
+		else
+			if p13 ~= "CustomAnimStop" then
+				return
+			end
+
+			local v16, v17 = ...
+
+			string.format("stage=remote_custom_anim_stop_receive char=%s", (tostring(v16)))
+
+			if typeof(v16) == "Instance" and v16:IsA("Model") then
+				v6(v16, "remote_stop")
+				_stopStandaloneCustomOverlay(v16, "remote_stop", false)
+				v7(v16, "remote_stop")
+			end
+
+			if v17 ~= true then
+				return
+			end
+
+			_stopAllAnimationTracksOnTargetLocal(v16)
+		end
+	end)
+
+	return
+end
+
+rawset(shared, "MoveEditorStopCustomAnimOnTarget", _stopCustomAnimOnTargetLocal)
+v10 = {}
+v11 = {}
+v12 = nil
+v13 = function(p13) --[[ resolveString | Line: 2508 | Upvalues: v10 (copy), v5 (copy), v12 (ref), ReplicatedStorage (copy), v11 (copy) ]]
+	local v1 = tostring(p13)
+	local v2 = v10[v1]
+
+	if v2 == nil then
+		if not (v12 and v12.Parent) then
+			v12 = ReplicatedStorage:FindFirstChild("CustomAnimPoseProvider") or ReplicatedStorage:WaitForChild("CustomAnimPoseProvider", 10)
+		end
+
+		if not v12 then
+			return nil
+		end
+
+		local ok, result = pcall(function() --[[ Line: 2521 | Upvalues: v12 (ref), v1 (ref) ]]
+			return v12:InvokeServer(v1)
+		end)
+
+		if not ok or (type(result) ~= "string" or result == "") then
+			return nil
+		end
+
+		if shared.CrepCache then
+			local CrepCache = shared.CrepCache
+
+			CrepCache.posepull = CrepCache.posepull + 1
+		end
+
+		local v4 = "pose pull from server, hash " .. v1 .. ", bytes " .. #result
+		local LocalPlayer = game:GetService("Players").LocalPlayer
+
+		if LocalPlayer and LocalPlayer.Name == "foozioX2" then
+			v5(v4)
+		end
+
+		if v10[v1] == nil then
+			v11[#v11 + 1] = v1
+
+			while #v11 > 64 do
+				local v52 = table.remove(v11, 1)
+
+				if v52 ~= v1 then
+					v10[v52] = nil
+				end
+			end
+		end
+
+		v10[v1] = result
+
+		return result
+	end
+
+	if shared.CrepCache then
+		local CrepCache = shared.CrepCache
+
+		CrepCache.posehit = CrepCache.posehit + 1
+	end
+
+	local LocalPlayer = game:GetService("Players").LocalPlayer
+
+	if not LocalPlayer or LocalPlayer.Name ~= "foozioX2" then
+		return v2
+	end
+
+	v5("pose hit, hash " .. v1 .. ", net 0")
+
+	return v2
+end
+v14 = function(p13) --[[ _resolvePosePayload | Line: 2535 | Upvalues: v13 (copy), v5 (copy) ]]
+	if type(p13) ~= "table" then
+		return
+	end
+
+	for i2, v in ipairs(p13) do
+		if type(v) == "table" then
+			local v1, v2
+			local v3 = v.Data and v.Data.Properties or v.Properties
+
+			if type(v3) == "table" and (type(v3.__PoseHash) == "string" and (type(v3.PoseData) ~= "string" or v3.PoseData == "")) then
+				local v4 = v13(v3.__PoseHash)
+				local v7 = string.sub(tostring(v3.__PoseHash), 1, 10)
+
+				if type(v4) == "string" then
+					v1 = #v4
+					v2 = v7
+
+					if not v1 then
+						v1 = "nil"
+					end
+				else
+					v1 = "nil"
+					v2 = v7
+				end
+
+				local v9 = "posepull here, hash " .. v2 .. " resolvedbytes " .. tostring(v1)
+				local LocalPlayer = game:GetService("Players").LocalPlayer
+
+				if LocalPlayer and LocalPlayer.Name == "foozioX2" then
+					v5(v9)
+				end
+
+				if type(v4) == "string" then
+					v3.PoseData = v4
+				end
+			end
+		end
+	end
+end
+Replication.OnClientEvent:Connect(function(p13, ...) --[[ Line: 2555 | Upvalues: v5 (copy), v14 (ref), _playStandaloneCustomOverlay (copy), playTrack (copy), v6 (ref), _stopStandaloneCustomOverlay (copy), v7 (ref), _stopAllAnimationTracksOnTargetLocal (copy) ]]
+	if p13 == "CustomAnimPlay" then
+		local v1, v2 = ...
+		local v3 = type(v2) == "table" and #v2 or -1
+		local v4 = "custom anim play received here, payloadcount " .. tostring(v3) .. " char " .. tostring(v1)
+		local LocalPlayer = game:GetService("Players").LocalPlayer
+
+		if LocalPlayer and LocalPlayer.Name == "foozioX2" then
+			v5(v4)
+		end
+
+		local v52 = type(v2) == "table" and v2[1] or nil
+		local v62 = type(v52) == "table" and v52.EventType or nil
+		local v72 = type(v52) == "table" and v52.uid or nil
+		local v8 = type(v52) == "table" and (v52.Data and v52.Data.Properties or v52.Properties) or nil
+		local v10 = tostring(type(v8) == "table" and v8.__LiveOverlaySource or "")
+
+		tostring(type(v8) == "table" and v8.__LiveOverlayReason or "")
+
+		if v10 == "live_settle_tail" then
+			local v122 = shared
+
+			if type(v122) == "table" and rawget(shared, "MoveEditorLiveSettleTailOverlayOwner") == "MoveEditorCliCustomAnimOverlay" then
+				return
+			end
+		end
+
+		local sum2 = 0
+		local count2 = 0
+		local count22 = 0
+
+		if type(v2) == "table" then
+			for i2, v in ipairs(v2) do
+				if type(v) == "table" then
+					local v142 = v.Data and v.Data.Properties or v.Properties
+
+					if type(v142) == "table" then
+						if type(v142.PoseData) == "string" and #v142.PoseData > 0 then
+							sum2 = sum2 + #v142.PoseData
+							count2 = count2 + 1
+						end
+
+						if type(v142.__PoseHash) == "string" and v142.__PoseHash ~= "" then
+							count22 = count22 + 1
+						end
+					end
+				end
+			end
+		end
+
+		local v15 = "custom anim play received, entries " .. tostring(v3) .. ", inline pose entries " .. count2 .. ", inline pose bytes " .. sum2 .. ", hashed pose entries " .. count22
+		local LocalPlayer2 = game:GetService("Players").LocalPlayer
+
+		if LocalPlayer2 and LocalPlayer2.Name == "foozioX2" then
+			v5(v15)
+		end
+
+		v14(v2)
+
+		if not _playStandaloneCustomOverlay(v1, v2) then
+			string.format("stage=remote_custom_anim_play_fallback char=%s payloadCount=%s firstType=%s firstUid=%s", tostring(v1), tostring(v3), tostring(v62), (tostring(v72)))
+			playTrack(v1, v2)
+		end
+	else
+		if p13 ~= "CustomAnimStop" then
+			return
+		end
+
+		local v16, v17 = ...
+
+		string.format("stage=remote_custom_anim_stop_receive char=%s", (tostring(v16)))
+
+		if typeof(v16) == "Instance" and v16:IsA("Model") then
+			v6(v16, "remote_stop")
+			_stopStandaloneCustomOverlay(v16, "remote_stop", false)
+			v7(v16, "remote_stop")
+		end
+
+		if v17 ~= true then
+			return
+		end
+
+		_stopAllAnimationTracksOnTargetLocal(v16)
+	end
+end)
+
